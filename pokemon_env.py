@@ -35,11 +35,6 @@ class PokemonBlueEnv(gym.Env):
         self.level_reward = 0
         self.exp_reward = 0
 
-        # Frame memory
-        self.im_dim = im_dim
-        self.nb_frame_stack = nb_frame_stack
-        self.frame_memory = FrameMemory(self.nb_frame_stack, self.im_dim)
-
         # Exploration memory
         self.sim_frame_dist = sim_frame_dist
         self.exploration_memory = ExplorationMemory(20_000, im_dim[0]*im_dim[1]*im_dim[2])
@@ -219,7 +214,6 @@ class PokemonBlueEnv(gym.Env):
             self.pyboy.send_input(self.release_mapping[action])
 
         obs = self.get_current_state()
-        self.frame_memory.update_memory(obs[1])
         self.update_exp_memory(obs[1])
 
         reward = self.get_reward(obs[0])
@@ -227,4 +221,4 @@ class PokemonBlueEnv(gym.Env):
         self.last_health = self.read_hp_fraction()
         self.levels = obs[0]["levels"]
 
-        return obs[0], self.frame_memory.get_recent_frames(), reward
+        return obs[0], obs[1], reward
