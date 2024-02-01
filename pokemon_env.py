@@ -4,9 +4,10 @@ import numpy as np
 from pyboy import PyBoy, WindowEvent
 from memory_addresses import *
 from memory import ExplorationMemory
+from memory import ExplorationMemory
 
 class PokemonEnv(gym.Env):
-    def __init__(self, rom_path, emulation_speed=0, start_level=5, render_reward=False, im_dim=(100, 100), sim_frame_dist=15_000.0, render_view=False):
+    def __init__(self, rom_path, emulation_speed=6, start_level=5, render_reward=False, im_dim=(144, 160, 3), sim_frame_dist=20_000.0):
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -20,6 +21,7 @@ class PokemonEnv(gym.Env):
         - None
         """
         super().__init__()
+        super().__init__()
 
         self.init_state = "jeu/init_state_pokeball.state"
         if render_view : 
@@ -29,11 +31,8 @@ class PokemonEnv(gym.Env):
         self.pyboy.set_emulation_speed(emulation_speed)
         self.observation_space = spaces.Box(low=0, high=255, shape=im_dim,  dtype=np.uint8)
         self.done = False
-        self.resize_shape = (im_dim[1], im_dim[0])
         self.nb_step = 0
-        self.max_step = 2048 * 8 * 5 
-        self.action_freq = 24
-        self.im_dim = im_dim
+        self.max_step = 2048 * 8
 
         # Rewards
         self.last_health = 1
@@ -169,7 +168,7 @@ class PokemonEnv(gym.Env):
             "levels": self.get_levels(),
             "badges": self.get_badges(),
             "pokedex": self.pokedex_count(),
-        }, frame
+        }, np.array(self.pyboy.screen_image())
 
 
     def get_reward(self, obs):
@@ -184,7 +183,7 @@ class PokemonEnv(gym.Env):
         """
         self.level_reward = max(obs["levels"] - self.levels, 0)
         if self.render_reward:
-            print(f"Pokédex: {5*obs['pokedex']}, Badges: {20*obs['badges']}, Death: {-3*self.died_count}, Levels: {2*self.level_reward}, exploration: {5*self.exp_reward}")
+            print(f"Pokédex: {5*obs['pokedex']}, Badges: {20*obs['badges']}, Death: {-3*obs['died']}, Levels: {2*self.level_reward}, exploration: {5*self.exp_reward}")
         return 5*obs['pokedex'] + 20*obs["badges"] - 3*self.died_count + 2*self.level_reward + 5*self.exp_reward
 
 
@@ -241,4 +240,9 @@ class PokemonEnv(gym.Env):
         if self.nb_step >= self.max_step:
             self.done = True
 
+        self.nb_step += 1
+        if self.nb_step >= self.max_step:
+            self.done = True
+
+        return obs[0], obs[1], reward, self.done
         return obs[0], obs[1], reward, self.done
