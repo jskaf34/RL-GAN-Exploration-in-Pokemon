@@ -12,7 +12,7 @@ class QNetwork(nn.Module):
         self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
         # Input shape is (B, 4, 144, 160)
-        self.fc1 = nn.Linear(32 * 16 * 18 + 4, 256)
+        self.fc1 = nn.Linear(32 * 11 * 11 + 4, 256)
         self.fc2 = nn.Linear(256, action_size)
         
         self.flatten = nn.Flatten()
@@ -93,11 +93,6 @@ class DQNAgent:
             target_net_state_dict[key] = q_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
         self.target_q_network.load_state_dict(target_net_state_dict)
 
-
-def preprocess_img(img):
-    
-    return np.dot(img[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
-
 # Training loop
 def train(env, agent, num_episodes=1000, batch_size=512):
     agent.q_network.to(agent.device)
@@ -105,7 +100,7 @@ def train(env, agent, num_episodes=1000, batch_size=512):
     for episode in range(num_episodes):
         infos, img = env.reset()
         state_infos = torch.tensor(list(infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
-        agent.frame_stacking.reset(preprocess_img(img))
+        agent.frame_stacking.reset(img)
         stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
         total_reward = 0
 
@@ -113,7 +108,7 @@ def train(env, agent, num_episodes=1000, batch_size=512):
             action = agent.select_action((stacked_frames, state_infos))[0][0].item()
             next_state_infos, next_state_img, reward, done = env.step(action)
             next_state_infos = torch.tensor(list(next_state_infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
-            agent.frame_stacking.update_buffer(preprocess_img(next_state_img))
+            agent.frame_stacking.update_buffer(next_state_img)
             next_stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
             agent.replay_buffer.push(stacked_frames, state_infos, torch.tensor(action).unsqueeze(0).to(agent.device), next_stacked_frames, next_state_infos, torch.tensor(reward).unsqueeze(0).to(agent.device), done)
             agent.update_model(batch_size)
