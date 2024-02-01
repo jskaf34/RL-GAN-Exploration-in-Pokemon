@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 from memory import ReplayBuffer, FrameStacker
 import random
-from pokemon_env import PokemonEnv
 import math
 import numpy as np
 
@@ -40,10 +39,11 @@ class DQNAgent:
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
+        self.tau = 0.005
         self.replay_buffer = ReplayBuffer(capacity=10000)
         self.frame_stacking = FrameStacker(num_frames=4, frame_shape=(144, 160))
         self.step = 0
-        self.device = torch.cuda.current_device() if torch.cuda.is_available() else torch.device('cpu')
+        self.device = 'cuda' if torch.cuda.is_available() else torch.device('cpu')
 
     def select_action(self, state):
         sample = random.random()
@@ -75,37 +75,47 @@ class DQNAgent:
         next_state_infos_batch = torch.cat(batch.next_state_infos)
 
         current_q_values = self.q_network(stacked_frames_batch, state_infos_batch).gather(1, action_batch.unsqueeze(0))
-        next_q_values = self.target_q_network(next_stacked_frames_batch, next_state_infos_batch).max(1).values.view(1,32).squeeze(0)
+        next_q_values = self.target_q_network(next_stacked_frames_batch, next_state_infos_batch).max(1).values
 
         expected_q_values = reward_batch + self.gamma * next_q_values
 
         criterion = nn.SmoothL1Loss()
-        loss = criterion(current_q_values, expected_q_values.unsqueeze(1))
+        loss = criterion(current_q_values, expected_q_values.unsqueeze(0))
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_value_(self.q_network.parameters(), 100)
         self.optimizer.step()
 
+    def update_target_network(self):
+        target_net_state_dict = self.target_q_network.state_dict()
+        q_net_state_dict = self.q_network.state_dict()
+        for key in q_net_state_dict:
+            target_net_state_dict[key] = q_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
+        self.target_q_network.load_state_dict(target_net_state_dict)
+
 
 def preprocess_img(img):
+    
     return np.dot(img[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
 
 # Training loop
-def train(env, agent, num_episodes=1000, batch_size=32):
+def train(env, agent, num_episodes=1000, batch_size=512):
+    agent.q_network.to(agent.device)
+    agent.target_q_network.to(agent.device)
     for episode in range(num_episodes):
         infos, img = env.reset()
-        state_infos = torch.tensor(list(infos.values()), dtype=torch.float32).unsqueeze(0)
+        state_infos = torch.tensor(list(infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
         agent.frame_stacking.reset(preprocess_img(img))
-        stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
+        stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
         total_reward = 0
 
         while True:
             action = agent.select_action((stacked_frames, state_infos))[0][0].item()
             next_state_infos, next_state_img, reward, done = env.step(action)
-            next_state_infos = torch.tensor(list(next_state_infos.values()), dtype=torch.float32).unsqueeze(0)
+            next_state_infos = torch.tensor(list(next_state_infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
             agent.frame_stacking.update_buffer(preprocess_img(next_state_img))
-            next_stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0)
-            agent.replay_buffer.push(stacked_frames, state_infos, torch.tensor(action).unsqueeze(0), next_stacked_frames, next_state_infos, torch.tensor(reward).unsqueeze(0), done)
+            next_stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
+            agent.replay_buffer.push(stacked_frames, state_infos, torch.tensor(action).unsqueeze(0).to(agent.device), next_stacked_frames, next_state_infos, torch.tensor(reward).unsqueeze(0).to(agent.device), done)
             agent.update_model(batch_size)
             total_reward += reward
 
@@ -120,11 +130,14 @@ def train(env, agent, num_episodes=1000, batch_size=32):
 
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
 
-# Example usage
-env = PokemonEnv('jeu/PokemonRed.gb')
-state_size = env.observation_space.shape[0]
-action_size = env.action_space.n
+if __name__ == '__main__':
+    from pokemon_env import PokemonEnv
 
-agent = DQNAgent()
+    env = PokemonEnv('jeu/PokemonRed.gb', render_reward=False)
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
 
-train(env, agent, num_episodes=1000)
+    agent = DQNAgent()
+    print("Using device : ", agent.device)
+
+    train(env, agent, num_episodes=1000)

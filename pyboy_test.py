@@ -23,7 +23,7 @@ while not pyboy.tick():
         gray = Image.fromarray(gray_obs)
         image.save("original_image.png")
         gray.save("grayscaled_image.png")
-        resized = gray.resize((140, 140))
+        resized = gray.resize((120, 120))
         resized.save("resized_grayscale_image.png")
         res =image.resize((140, 140))
         res.save("resized.png")

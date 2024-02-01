@@ -6,7 +6,7 @@ from memory_addresses import *
 from memory import ExplorationMemory
 
 class PokemonEnv(gym.Env):
-    def __init__(self, rom_path, emulation_speed=6, start_level=5, render_reward=False, im_dim=(144, 160, 3), sim_frame_dist=20_000.0):
+    def __init__(self, rom_path, emulation_speed=0, start_level=5, render_reward=False, im_dim=(144, 160, 3), sim_frame_dist=20_000.0, render_view=False):
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -22,12 +22,15 @@ class PokemonEnv(gym.Env):
         super().__init__()
 
         self.init_state = open("jeu/init_state_pokeball.state", "rb")
-        self.pyboy = PyBoy(rom_path)
+        if render_view : 
+            self.pyboy = PyBoy(rom_path)
+        else :
+            self.pyboy = PyBoy(rom_path, window_type="headless")
         self.pyboy.set_emulation_speed(emulation_speed)
         self.observation_space = spaces.Box(low=0, high=255, shape=im_dim,  dtype=np.uint8)
         self.done = False
         self.nb_step = 0
-        self.max_step = 2048 * 8
+        self.max_step = 2048 * 8 * 100
 
         # Rewards
         self.last_health = 1
@@ -177,7 +180,7 @@ class PokemonEnv(gym.Env):
         """
         self.level_reward = max(obs["levels"] - self.levels, 0)
         if self.render_reward:
-            print(f"Pokédex: {5*obs['pokedex']}, Badges: {20*obs['badges']}, Death: {-3*obs['died']}, Levels: {2*self.level_reward}, exploration: {5*self.exp_reward}")
+            print(f"Pokédex: {5*obs['pokedex']}, Badges: {20*obs['badges']}, Death: {-3*self.died_count}, Levels: {2*self.level_reward}, exploration: {5*self.exp_reward}")
         return 5*obs['pokedex'] + 20*obs["badges"] - 3*self.died_count + 2*self.level_reward + 5*self.exp_reward
 
 
@@ -226,5 +229,8 @@ class PokemonEnv(gym.Env):
         self.nb_step += 1
         if self.nb_step >= self.max_step:
             self.done = True
+        
+        if self.nb_step % 1000 == 0:
+            print(self.nb_step)
 
         return obs[0], obs[1], reward, self.done
