@@ -17,17 +17,14 @@ while not pyboy.tick():
     #     #     pyboy.save_state(state_file)
         
         # Test Preprocessing
-        raw_observation = np.array(pyboy.screen_image())
-        gray_obs = np.dot(raw_observation[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
-        image = Image.fromarray(raw_observation.astype(np.uint8))
-        gray = Image.fromarray(gray_obs)
-        image.save("original_image.png")
-        gray.save("grayscaled_image.png")
-        resized = gray.resize((120, 120))
-        resized.save("resized_grayscale_image.png")
-        res =image.resize((140, 140))
-        res.save("resized.png")
-
+        raw_observation = pyboy.screen_image()
+        raw_observation.save("raw_observation.png")
+        resized = raw_observation.resize((100, 100)).convert('L')
+        resized.save("resized.png")
+        gray = raw_observation.convert('L')
+        gray.save("grayscale.png")
+        gray_resized = gray.resize((100, 100))
+        gray_resized.save("resized_grayscale.png")
 
 # Close the emulator
 pyboy.stop()
