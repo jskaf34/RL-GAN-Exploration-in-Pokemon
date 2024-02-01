@@ -3,10 +3,10 @@ from gym import spaces
 import numpy as np
 from pyboy import PyBoy, WindowEvent
 from memory_addresses import *
-from memory import FrameMemory, ExplorationMemory
+from memory import ExplorationMemory
 
-class PokemonBlueEnv(gym.Env):
-    def __init__(self, rom_path, emulation_speed=6, start_level=5, render_reward=False, im_dim=(144, 160, 3), nb_frame_stack=3, sim_frame_dist=20_000.0):
+class PokemonEnv(gym.Env):
+    def __init__(self, rom_path, emulation_speed=6, start_level=5, render_reward=False, im_dim=(144, 160, 3), sim_frame_dist=20_000.0):
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -19,12 +19,15 @@ class PokemonBlueEnv(gym.Env):
         Returns:
         - None
         """
-        super(PokemonBlueEnv, self).__init__()
+        super().__init__()
 
         self.init_state = open("jeu/init_state_pokeball.state", "rb")
         self.pyboy = PyBoy(rom_path)
         self.pyboy.set_emulation_speed(emulation_speed)
         self.observation_space = spaces.Box(low=0, high=255, shape=im_dim,  dtype=np.uint8)
+        self.done = False
+        self.nb_step = 0
+        self.max_step = 2048 * 8
 
         # Rewards
         self.last_health = 1
@@ -159,7 +162,6 @@ class PokemonBlueEnv(gym.Env):
             "levels": self.get_levels(),
             "badges": self.get_badges(),
             "pokedex": self.pokedex_count(),
-            "died": self.died_count
         }, np.array(self.pyboy.screen_image())
 
 
@@ -176,7 +178,7 @@ class PokemonBlueEnv(gym.Env):
         self.level_reward = max(obs["levels"] - self.levels, 0)
         if self.render_reward:
             print(f"Pokédex: {5*obs['pokedex']}, Badges: {20*obs['badges']}, Death: {-3*obs['died']}, Levels: {2*self.level_reward}, exploration: {5*self.exp_reward}")
-        return 5*obs['pokedex'] + 20*obs["badges"] - 3*obs["died"] + 2*self.level_reward + 5*self.exp_reward
+        return 5*obs['pokedex'] + 20*obs["badges"] - 3*self.died_count + 2*self.level_reward + 5*self.exp_reward
 
 
     def reset(self):
@@ -221,4 +223,8 @@ class PokemonBlueEnv(gym.Env):
         self.last_health = self.read_hp_fraction()
         self.levels = obs[0]["levels"]
 
-        return obs[0], obs[1], reward
+        self.nb_step += 1
+        if self.nb_step >= self.max_step:
+            self.done = True
+
+        return obs[0], obs[1], reward, self.done
