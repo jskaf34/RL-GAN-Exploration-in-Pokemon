@@ -4,7 +4,6 @@ import torch.optim as optim
 from memory import ReplayBuffer, FrameStacker
 import random
 import math
-import numpy as np
 
 class QNetwork(nn.Module):
     def __init__(self, action_size=7, input_channels=4):
@@ -92,47 +91,3 @@ class DQNAgent:
         for key in q_net_state_dict:
             target_net_state_dict[key] = q_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
         self.target_q_network.load_state_dict(target_net_state_dict)
-
-# Training loop
-def train(env, agent, num_episodes=1000, batch_size=512):
-    agent.q_network.to(agent.device)
-    agent.target_q_network.to(agent.device)
-    for episode in range(num_episodes):
-        infos, img = env.reset()
-        state_infos = torch.tensor(list(infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
-        agent.frame_stacking.reset(img)
-        stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
-        total_reward = 0
-
-        while True:
-            action = agent.select_action((stacked_frames, state_infos))[0][0].item()
-            next_state_infos, next_state_img, reward, done = env.step(action)
-            next_state_infos = torch.tensor(list(next_state_infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
-            agent.frame_stacking.update_buffer(next_state_img)
-            next_stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
-            agent.replay_buffer.push(stacked_frames, state_infos, torch.tensor(action).unsqueeze(0).to(agent.device), next_stacked_frames, next_state_infos, torch.tensor(reward).unsqueeze(0).to(agent.device), done)
-            agent.update_model(batch_size)
-            total_reward += reward
-
-            if done:
-                break
-
-            state_infos = next_state_infos
-            stacked_frames = next_stacked_frames
-
-        agent.update_target_network()
-        agent.decay_epsilon()
-
-        print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
-
-if __name__ == '__main__':
-    from pokemon_env import PokemonEnv
-
-    env = PokemonEnv('jeu/PokemonRed.gb', render_reward=False)
-    state_size = env.observation_space.shape[0]
-    action_size = env.action_space.n
-
-    agent = DQNAgent()
-    print("Using device : ", agent.device)
-
-    train(env, agent, num_episodes=1000)
