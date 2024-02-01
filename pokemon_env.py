@@ -235,8 +235,5 @@ class PokemonEnv(gym.Env):
         self.nb_step += 1
         if self.nb_step >= self.max_step:
             self.done = True
-        
-        if self.nb_step % 1000 == 0:
-            print(self.nb_step)
 
         return obs[0], obs[1], reward, self.done
