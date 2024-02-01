@@ -7,7 +7,7 @@ from memory import ExplorationMemory
 from memory import ExplorationMemory
 
 class PokemonEnv(gym.Env):
-    def __init__(self, rom_path, emulation_speed=0, start_level=5, render_reward=False, im_dim=(144, 160, 3), sim_frame_dist=20_000.0, render_view=False):
+    def __init__(self, rom_path, emulation_speed=0, start_level=5, render_reward=False, im_dim=(100, 100), sim_frame_dist=15_000.0, render_view=False):
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -31,8 +31,10 @@ class PokemonEnv(gym.Env):
         self.pyboy.set_emulation_speed(emulation_speed)
         self.observation_space = spaces.Box(low=0, high=255, shape=im_dim,  dtype=np.uint8)
         self.done = False
+        self.resize_shape = (im_dim[1], im_dim[0])
         self.nb_step = 0
         self.max_step = 2048 * 8 * 100
+        self.action_freq = 24
 
         # Rewards
         self.last_health = 1
@@ -45,7 +47,7 @@ class PokemonEnv(gym.Env):
 
         # Exploration memory
         self.sim_frame_dist = sim_frame_dist
-        self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
+        self.exploration_memory = ExplorationMemory(20_000, im_dim[0]*im_dim[1])
 
         # Actions
         self.action_space = spaces.Discrete(7) # 0: no action
@@ -160,6 +162,7 @@ class PokemonEnv(gym.Env):
         - Tuple[Dict, np.ndarray]: Tuple containing a dictionary of environment state and an array representing the screen image.
         """
         frame = np.array(self.pyboy.screen_image().resize(self.resize_shape).convert('L'))
+        frame = np.array(self.pyboy.screen_image().resize(self.resize_shape).convert('L'))
         curr_hp = self.read_hp_fraction()
         if curr_hp == 0 and self.last_health > 0:
             self.died_count += 1
@@ -168,7 +171,7 @@ class PokemonEnv(gym.Env):
             "levels": self.get_levels(),
             "badges": self.get_badges(),
             "pokedex": self.pokedex_count(),
-        }, np.array(self.pyboy.screen_image())
+        }, frame
 
 
     def get_reward(self, obs):
@@ -224,6 +227,9 @@ class PokemonEnv(gym.Env):
 
         if action > 0:
             self.pyboy.send_input(self.release_mapping[action])
+
+        for _ in range(self.action_freq-1):
+            self.pyboy.tick()
 
         for _ in range(self.action_freq-1):
             self.pyboy.tick()
