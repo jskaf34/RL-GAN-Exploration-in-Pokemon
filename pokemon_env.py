@@ -203,6 +203,7 @@ class PokemonEnv(gym.Env):
         self.level_reward = 0
         self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
         obs = self.get_current_state()
+        self.done = False
         return obs[0], obs[1]
 
 
