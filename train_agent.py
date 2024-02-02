@@ -1,5 +1,6 @@
 import torch
 from model import DQNAgent
+from datetime import datetime
 
 def train(env, agent, num_episodes, batch_size, save_dir):
     agent.q_network.to(agent.device)
@@ -27,12 +28,14 @@ def train(env, agent, num_episodes, batch_size, save_dir):
             state_infos = next_state_infos
             stacked_frames = next_stacked_frames
 
+            if env.nb_step % 10000 == 0 :
+                print(env.nb_step, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
         agent.update_target_network()
-        agent.decay_epsilon()
 
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
 
-        if episode % 10 == 0:
+        if episode % 5 == 0:
             torch.save(agent.q_network.state_dict(), f"{save_dir}/q_network_{episode + 1}.pth")
             torch.save(agent.target_q_network.state_dict(), f"{save_dir}/target_q_network_{episode + 1}.pth")
 
@@ -53,14 +56,14 @@ def main(args):
     new_dir_name = f"training_{len(dirs) + 1}"
     os.makedirs(os.path.join(args.save_dir, new_dir_name))
 
-    train(env, agent, args.batch_size, args.num_episodes, os.path.join(args.save_dir, new_dir_name))
+    train(env, agent, args.num_episodes, args.batch_size, os.path.join(args.save_dir, new_dir_name))
 
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-sd', '--save_dir', type=str, default='checkpoints/')
-    parser.add_argument('-b', '--batch_size', type=int, default=512)
+    parser.add_argument('-b', '--batch_size', type=int, default=256)
     parser.add_argument("-ne", "--num_episodes", type=int, default=1000)
 
     main(parser.parse_args())
