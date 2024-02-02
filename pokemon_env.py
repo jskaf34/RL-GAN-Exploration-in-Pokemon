@@ -21,7 +21,7 @@ class PokemonEnv(gym.Env):
         """
         super().__init__()
 
-        self.init_state = open("jeu/init_state_pokeball.state", "rb")
+        self.init_state = "jeu/init_state_pokeball.state"
         if render_view : 
             self.pyboy = PyBoy(rom_path)
         else :
@@ -31,8 +31,9 @@ class PokemonEnv(gym.Env):
         self.done = False
         self.resize_shape = (im_dim[1], im_dim[0])
         self.nb_step = 0
-        self.max_step = 2048 * 8 * 100
+        self.max_step = 2048 * 8 * 5 
         self.action_freq = 24
+        self.im_dim = im_dim
 
         # Rewards
         self.last_health = 1
@@ -45,7 +46,7 @@ class PokemonEnv(gym.Env):
 
         # Exploration memory
         self.sim_frame_dist = sim_frame_dist
-        self.exploration_memory = ExplorationMemory(20_000, im_dim[0]*im_dim[1])
+        self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
 
         # Actions
         self.action_space = spaces.Discrete(7) # 0: no action
@@ -194,13 +195,15 @@ class PokemonEnv(gym.Env):
         Returns:
         - Tuple[Dict, np.ndarray]: Initial environment state.
         """
-        self.pyboy.load_state(self.init_state)
+        with open(self.init_state, "rb") as f:
+            self.pyboy.load_state(f)
         self.last_health = 1
         self.died_count = 0
         self.levels = self.start_level
         self.level_reward = 0
+        self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
         obs = self.get_current_state()
-        return obs
+        return obs[0], obs[1]
 
 
     def step(self, action):
@@ -235,8 +238,5 @@ class PokemonEnv(gym.Env):
         self.nb_step += 1
         if self.nb_step >= self.max_step:
             self.done = True
-        
-        if self.nb_step % 1000 == 0:
-            print(self.nb_step)
 
         return obs[0], obs[1], reward, self.done
