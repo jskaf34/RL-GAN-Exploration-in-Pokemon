@@ -38,7 +38,7 @@ class DQNAgent:
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
-        self.tau = 0.005
+        self.tau = 0.1
         self.replay_buffer = ReplayBuffer(capacity=10000)
         self.frame_stacking = FrameStacker(num_frames=4, frame_shape=(144, 160))
         self.step = 0
