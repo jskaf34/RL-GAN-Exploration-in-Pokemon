@@ -10,7 +10,7 @@ class QNetwork(nn.Module):
         super(QNetwork, self).__init__()
         self.conv1 = nn.Conv2d(input_channels, 16, kernel_size=8, stride=4)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=4, stride=2)
-        # Input shape is (B, 4, 144, 160)
+        # Input shape is (B, 4, 100, 100)
         self.fc1 = nn.Linear(32 * 11 * 11 + 4, 256)
         self.fc2 = nn.Linear(256, action_size)
         

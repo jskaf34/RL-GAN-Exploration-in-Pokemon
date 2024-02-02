@@ -31,8 +31,7 @@ class PokemonEnv(gym.Env):
         self.done = False
         self.resize_shape = (im_dim[1], im_dim[0])
         self.nb_step = 0
-        # self.max_step = 2048 * 8 * 5 
-        self.max_step = 1000
+        self.max_step = 2048 * 8 * 5 
         self.action_freq = 24
         self.im_dim = im_dim
 
