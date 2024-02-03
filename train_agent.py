@@ -34,7 +34,7 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
             state_infos = next_state_infos
             stacked_frames = next_stacked_frames
 
-            if env.nb_step % 10000 == 0 :
+            if env.nb_step % 20_000 == 0 :
                 print(env.nb_step, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
@@ -50,7 +50,7 @@ def main(args):
     import os
 
     env = PokemonEnv('env_config.yaml')
-    agent = DQNAgent(action_size=args.nb_action)
+    agent = DQNAgent("agent_config.yaml")
 
     if args.from_pretrained :
         agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
