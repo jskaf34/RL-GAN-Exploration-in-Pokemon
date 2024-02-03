@@ -17,4 +17,7 @@ Opt search : 0.3584418296813965
 ### Choix des actions
 J'ai décidé d'ajouter l'action "0: ne rien faire", parce que lors des cinématiques de combat ou de discussion, avec le tick de pyboy il faut attendre bcp de frames avant d'avoir vraiment une action à faire, je me suis dit que c'était mieux si l'agent pouvait apprendre à ne rien faire dans ces moments là (comme nous on ferait).
 
+UPDATE:
+En fait plutôt que de faire ça on peut aussi attendre X ticks avant de renvoyer un nouvel état. 24 est dans le modèle initial. J'ai testé avec le script test_tick.py et j'ai l'impression que pour les combats c'est 48 ticks. Donc j'ai mis 48 dans le code.
+
 ## DQN

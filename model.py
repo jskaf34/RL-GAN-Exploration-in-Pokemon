@@ -38,7 +38,7 @@ class DQNAgent:
         self.epsilon = epsilon_start
         self.epsilon_end = epsilon_end
         self.epsilon_decay = epsilon_decay
-        self.tau = 0.1
+        self.tau = 0.005
         self.replay_buffer = ReplayBuffer(capacity=10000)
         self.frame_stacking = FrameStacker(num_frames=4, frame_shape=(144, 160))
         self.step = 0
@@ -51,12 +51,9 @@ class DQNAgent:
         self.step += 1
         if sample > eps_threshold:
             with torch.no_grad():
-                # t.max(1) will return the largest column value of each row.
-                # second column on max result is index of where max element was
-                # found, so we pick action with the larger expected reward.
-                return self.q_network(*state).max(1).indices.view(1, 1)
+                return self.q_network(*state).max(1).indices.item()
         else:
-            return torch.tensor([[random.randint(0, self.action_size - 1)]], device=self.device, dtype=torch.long)
+            return random.randint(0, self.action_size - 1)
 
     def update_model(self, batch_size):
         if len(self.replay_buffer.memory) < batch_size:
