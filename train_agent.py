@@ -1,5 +1,5 @@
 import torch
-from model import DQNAgent
+from model import DQNAgent, DDQNAgent
 from datetime import datetime
 
 def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
@@ -50,7 +50,8 @@ def main(args):
     import os
 
     env = PokemonEnv('env_config.yaml')
-    agent = DQNAgent("agent_config.yaml")
+    # agent = DQNAgent("agent_config.yaml")
+    agent = DDQNAgent("agent_config.yaml")
 
     if args.from_pretrained :
         agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
