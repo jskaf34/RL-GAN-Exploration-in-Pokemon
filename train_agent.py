@@ -75,6 +75,6 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch_size', type=int, default=256)
     parser.add_argument("-ne", "--num_episodes", type=int, default=1000)
     parser.add_argument('--from_pretrained', action='store_true')
-    parser.add_argument("-na", '--nb_action', default=7)
+    parser.add_argument("-na", '--nb_action', type=int, default=7)
 
     main(parser.parse_args())
