@@ -1,8 +1,8 @@
 from memory import ExplorationMemory
 import numpy as np
 import time
-import hnswlib
 from tqdm import tqdm
+import hnswlib
 
 def fill_custom_memory(memory, num_samples=20_000):
     for _ in tqdm(range(num_samples)):

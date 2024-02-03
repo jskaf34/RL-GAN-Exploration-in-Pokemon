@@ -10,16 +10,13 @@ class FrameStacker:
         self.frames_buffer = deque(maxlen=num_frames)
 
     def reset(self, initial_frame):
-        # Repeat the initial frame to fill the buffer
         for _ in range(self.num_frames):
             self.frames_buffer.append(initial_frame)
 
     def stack_frames(self):
-        # Stack the frames along the last axis
         return np.stack(self.frames_buffer, axis=-1)
 
     def update_buffer(self, new_frame):
-        # Add the new frame to the buffer
         self.frames_buffer.append(new_frame)
 
 

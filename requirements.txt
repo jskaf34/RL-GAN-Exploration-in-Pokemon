@@ -6,3 +6,4 @@ pyboy
 gym 
 keyboard
 pillow
+pyyaml

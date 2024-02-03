@@ -5,25 +5,27 @@ from datetime import datetime
 def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
     agent.q_network.to(agent.device)
     agent.target_q_network.to(agent.device)
+
     for episode in range(num_episodes):
         if episode <= 10 and from_pretrained:
-            agent.step += 1
+            agent.step += env.max_step / env.action_freq
             continue 
 
         infos, img = env.reset()
-        state_infos = torch.tensor(list(infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
+        state_infos = torch.tensor(infos, dtype=torch.float32).unsqueeze(0).to(agent.device)
         agent.frame_stacking.reset(img)
         stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
         total_reward = 0
 
         while True:
-            action = agent.select_action((stacked_frames, state_infos))[0][0].item()
+            action = agent.select_action((stacked_frames, state_infos))
             next_state_infos, next_state_img, reward, done = env.step(action)
-            next_state_infos = torch.tensor(list(next_state_infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
+            next_state_infos = torch.tensor(next_state_infos, dtype=torch.float32).unsqueeze(0).to(agent.device)
             agent.frame_stacking.update_buffer(next_state_img)
             next_stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
             agent.replay_buffer.push(stacked_frames, state_infos, torch.tensor(action).unsqueeze(0).to(agent.device), next_stacked_frames, next_state_infos, torch.tensor(reward).unsqueeze(0).to(agent.device), done)
             agent.update_model(batch_size)
+            agent.update_target_network()
             total_reward += reward
 
             if done:
@@ -34,8 +36,6 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
 
             if env.nb_step % 10000 == 0 :
                 print(env.nb_step, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-        agent.update_target_network()
 
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
 
@@ -49,19 +49,18 @@ def main(args):
     from pokemon_env import PokemonEnv
     import os
 
-    env = PokemonEnv('jeu/PokemonRed.gb', nb_action=args.nb_action, render_reward=False)
+    env = PokemonEnv('env_config.yaml')
     agent = DQNAgent(action_size=args.nb_action)
+
     if args.from_pretrained :
         agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
         agent.target_q_network.load_state_dict(torch.load("checkpoints/training_1/target_q_network_11.pth"))
+
     print("Using device : ", agent.device)
 
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-
     dirs = [d for d in os.listdir(args.save_dir) if os.path.isdir(os.path.join(args.save_dir, d))]
-
-    # Create a new directory with a name based on the count
     new_dir_name = f"training_{len(dirs) + 1}"
     os.makedirs(os.path.join(args.save_dir, new_dir_name))
 
@@ -72,9 +71,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-sd', '--save_dir', type=str, default='checkpoints/')
-    parser.add_argument('-b', '--batch_size', type=int, default=256)
-    parser.add_argument("-ne", "--num_episodes", type=int, default=1000)
+    parser.add_argument('-b', '--batch_size', type=int, default=128)
+    parser.add_argument("-ne", "--num_episodes", type=int, default=500)
     parser.add_argument('--from_pretrained', action='store_true')
-    parser.add_argument("-na", '--nb_action', type=int, default=7)
+    parser.add_argument("-na", '--nb_action', type=int, default=6)
 
     main(parser.parse_args())

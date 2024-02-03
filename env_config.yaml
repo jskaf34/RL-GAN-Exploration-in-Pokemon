@@ -1,0 +1,13 @@
+rom_path: "jeu/PokemonRed.gb"
+exp_memory_size: 20000
+ep_length: 211_765 # Ca correspond à 1h de jeu : 1 tick = 0.017 s
+init_state: "jeu/init_state_pokeball.state"
+nb_action: 6
+emulation_speed: 0
+start_level: 8
+render_reward: false
+im_dim:
+  - 100
+  - 100
+sim_frame_dist: 15000.0
+render_view: false
