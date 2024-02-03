@@ -1,7 +1,7 @@
-from pokemon_env import PokemonBlueEnv
+from pokemon_env import PokemonEnv
 
 # Usage example:
-env = PokemonBlueEnv("jeu/PokemonRed.gb", emulation_speed=2, render_reward=True)
+env = PokemonEnv("jeu/PokemonRed.gb", emulation_speed=2, render_reward=True)
 observation = env.reset()
 
 for _ in range(10000):
