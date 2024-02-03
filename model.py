@@ -30,8 +30,8 @@ class QNetwork(nn.Module):
 class DQNAgent:
     def __init__(self, action_size=7, learning_rate=0.0001, gamma=0.99, epsilon_start=0.9, epsilon_end=0.05, epsilon_decay=1000):
         self.action_size = action_size
-        self.q_network = QNetwork()
-        self.target_q_network = QNetwork()
+        self.q_network = QNetwork(action_size=action_size)
+        self.target_q_network = QNetwork(action_size=action_size)
         self.target_q_network.load_state_dict(self.q_network.state_dict())
         self.optimizer = optim.AdamW(self.q_network.parameters(), lr=learning_rate, amsgrad=True)
         self.gamma = gamma
