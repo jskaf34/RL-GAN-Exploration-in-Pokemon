@@ -4,6 +4,7 @@ import torch.optim as optim
 from memory import ReplayBuffer, FrameStacker
 import random
 import math
+import yaml
 
 class QNetwork(nn.Module):
     def __init__(self, action_size=7, input_channels=4):
@@ -28,19 +29,22 @@ class QNetwork(nn.Module):
 
 # DQN agent
 class DQNAgent:
-    def __init__(self, action_size=7, learning_rate=0.0001, gamma=0.99, epsilon_start=0.9, epsilon_end=0.05, epsilon_decay=1000):
-        self.action_size = action_size
-        self.q_network = QNetwork(action_size=action_size)
-        self.target_q_network = QNetwork(action_size=action_size)
+    def __init__(self, config_file):
+        with open(config_file, 'r') as file:
+            config = yaml.safe_load(file)
+
+        self.action_size = config["action_size"]
+        self.q_network = QNetwork(action_size=config["action_size"])
+        self.target_q_network = QNetwork(action_size=config["action_size"])
         self.target_q_network.load_state_dict(self.q_network.state_dict())
-        self.optimizer = optim.AdamW(self.q_network.parameters(), lr=learning_rate, amsgrad=True)
-        self.gamma = gamma
-        self.epsilon = epsilon_start
-        self.epsilon_end = epsilon_end
-        self.epsilon_decay = epsilon_decay
+        self.optimizer = optim.AdamW(self.q_network.parameters(), lr=config["learning_rate"], amsgrad=True)
+        self.gamma = config["gamma"]
+        self.epsilon = config["epsilon_start"]
+        self.epsilon_end = config["epsilon_end"]
+        self.epsilon_decay = config["epsilon_decay"]
         self.tau = 0.005
         self.replay_buffer = ReplayBuffer(capacity=10000)
-        self.frame_stacking = FrameStacker(num_frames=4, frame_shape=(144, 160))
+        self.frame_stacking = FrameStacker(num_frames=4, frame_shape=config["image_shape"])
         self.step = 0
         self.device = 'cuda' if torch.cuda.is_available() else torch.device('cpu')
 
