@@ -49,8 +49,8 @@ def main(args):
     from pokemon_env import PokemonEnv
     import os
 
-    env = PokemonEnv('jeu/PokemonRed.gb', render_reward=False)
-    agent = DQNAgent()
+    env = PokemonEnv('jeu/PokemonRed.gb', nb_action=args.nb_action, render_reward=False)
+    agent = DQNAgent(action_size=args.nb_action)
     if args.from_pretrained :
         agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
         agent.target_q_network.load_state_dict(torch.load("checkpoints/training_1/target_q_network_11.pth"))
@@ -75,5 +75,6 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--batch_size', type=int, default=256)
     parser.add_argument("-ne", "--num_episodes", type=int, default=1000)
     parser.add_argument('--from_pretrained', action='store_true')
+    parser.add_argument("-na", '--nb_action', default=7)
 
     main(parser.parse_args())

@@ -7,7 +7,7 @@ from memory import ExplorationMemory
 from memory import ExplorationMemory
 
 class PokemonEnv(gym.Env):
-    def __init__(self, rom_path, emulation_speed=0, start_level=5, render_reward=False, im_dim=(100, 100), sim_frame_dist=15_000.0, render_view=False):
+    def __init__(self, rom_path, nb_action=7, emulation_speed=0, start_level=5, render_reward=False, im_dim=(100, 100), sim_frame_dist=15_000.0, render_view=False):
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -51,22 +51,22 @@ class PokemonEnv(gym.Env):
         self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
 
         # Actions
-        self.action_space = spaces.Discrete(7) # 0: no action
+        self.action_space = spaces.Discrete(nb_action) # 0: no action
         self.action_mapping = {
-            1: WindowEvent.PRESS_ARROW_UP,
-            2: WindowEvent.PRESS_ARROW_DOWN,
-            3: WindowEvent.PRESS_ARROW_LEFT,
-            4: WindowEvent.PRESS_ARROW_RIGHT,
-            5: WindowEvent.PRESS_BUTTON_A,
-            6: WindowEvent.PRESS_BUTTON_B,
+            0: WindowEvent.PRESS_ARROW_UP,
+            1: WindowEvent.PRESS_ARROW_DOWN,
+            2: WindowEvent.PRESS_ARROW_LEFT,
+            3: WindowEvent.PRESS_ARROW_RIGHT,
+            4: WindowEvent.PRESS_BUTTON_A,
+            5: WindowEvent.PRESS_BUTTON_B,
         }
         self.release_mapping = {
-            1: WindowEvent.RELEASE_ARROW_UP,
-            2: WindowEvent.RELEASE_ARROW_DOWN,
-            3: WindowEvent.RELEASE_ARROW_LEFT,
-            4: WindowEvent.RELEASE_ARROW_RIGHT,
-            5: WindowEvent.RELEASE_BUTTON_A,
-            6: WindowEvent.RELEASE_BUTTON_B,
+            0: WindowEvent.RELEASE_ARROW_UP,
+            1: WindowEvent.RELEASE_ARROW_DOWN,
+            2: WindowEvent.RELEASE_ARROW_LEFT,
+            3: WindowEvent.RELEASE_ARROW_RIGHT,
+            4: WindowEvent.RELEASE_BUTTON_A,
+            5: WindowEvent.RELEASE_BUTTON_B,
         }
 
 
@@ -224,12 +224,12 @@ class PokemonEnv(gym.Env):
         Returns:
         - Tuple[Dict, np.ndarray, float]: Tuple containing the next environment state, screen image, and reward.
         """
-        if action > 0:
+        if action < 7:
             self.pyboy.send_input(self.action_mapping[action])
 
         self.pyboy.tick()
 
-        if action > 0:
+        if action < 7:
             self.pyboy.send_input(self.release_mapping[action])
 
         for _ in range(self.action_freq-1):
