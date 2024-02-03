@@ -2,10 +2,14 @@ import torch
 from model import DQNAgent
 from datetime import datetime
 
-def train(env, agent, num_episodes, batch_size, save_dir):
+def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
     agent.q_network.to(agent.device)
     agent.target_q_network.to(agent.device)
     for episode in range(num_episodes):
+        if episode <= 10 and from_pretrained:
+            agent.step += 1
+            continue 
+
         infos, img = env.reset()
         state_infos = torch.tensor(list(infos.values()), dtype=torch.float32).unsqueeze(0).to(agent.device)
         agent.frame_stacking.reset(img)
@@ -38,6 +42,8 @@ def train(env, agent, num_episodes, batch_size, save_dir):
         if episode % 5 == 0:
             torch.save(agent.q_network.state_dict(), f"{save_dir}/q_network_{episode + 1}.pth")
             torch.save(agent.target_q_network.state_dict(), f"{save_dir}/target_q_network_{episode + 1}.pth")
+            with open(f"{save_dir}/state_{episode + 1}.state", "wb") as state_file:
+                env.pyboy.save_state(state_file)
 
 def main(args):
     from pokemon_env import PokemonEnv
@@ -45,6 +51,9 @@ def main(args):
 
     env = PokemonEnv('jeu/PokemonRed.gb', render_reward=False)
     agent = DQNAgent()
+    if args.from_pretrained :
+        agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
+        agent.target_q_network.load_state_dict(torch.load("checkpoints/training_1/target_q_network_11.pth"))
     print("Using device : ", agent.device)
 
     if not os.path.exists(args.save_dir):
@@ -56,7 +65,7 @@ def main(args):
     new_dir_name = f"training_{len(dirs) + 1}"
     os.makedirs(os.path.join(args.save_dir, new_dir_name))
 
-    train(env, agent, args.num_episodes, args.batch_size, os.path.join(args.save_dir, new_dir_name))
+    train(env, agent, args.num_episodes, args.batch_size, os.path.join(args.save_dir, new_dir_name), args.from_pretrained)
 
 if __name__ == '__main__':
     import argparse
@@ -65,5 +74,6 @@ if __name__ == '__main__':
     parser.add_argument('-sd', '--save_dir', type=str, default='checkpoints/')
     parser.add_argument('-b', '--batch_size', type=int, default=256)
     parser.add_argument("-ne", "--num_episodes", type=int, default=1000)
+    parser.add_argument('--from_pretrained', action='store_true')
 
     main(parser.parse_args())
