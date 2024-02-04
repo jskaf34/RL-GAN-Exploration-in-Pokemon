@@ -1,11 +1,14 @@
-from pokemon_env import PokemonBlueEnv
+from pokemon_env import PokemonEnv
+import time
 
 # Usage example:
-env = PokemonBlueEnv("jeu/PokemonRed.gb", emulation_speed=2, render_reward=True)
+env = PokemonEnv("env_config.yaml")
 observation = env.reset()
 
 for _ in range(10000):
     action = env.action_space.sample()
-    agent_state, screen, reward  = env.step(action)
+    print(action)
+    agent_state, frames, reward, _  = env.step(action)
+    time.sleep(1)
 
 env.close()

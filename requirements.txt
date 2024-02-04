@@ -5,3 +5,5 @@ tqdm
 pyboy 
 gym 
 keyboard
+pillow
+pyyaml

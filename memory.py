@@ -1,19 +1,24 @@
 import numpy as np
 from scipy.spatial.distance import cdist
+from collections import namedtuple, deque
+import random
 
-class FrameMemory:
+class FrameStacker:
     def __init__(self, num_frames, frame_shape):
         self.num_frames = num_frames
         self.frame_shape = frame_shape
-        self.memory = np.zeros((num_frames, *frame_shape), dtype=np.uint8)
-        self.current_index = 0
+        self.frames_buffer = deque(maxlen=num_frames)
 
-    def update_memory(self, new_frame):
-        self.memory[self.current_index] = new_frame
-        self.current_index = (self.current_index + 1) % self.num_frames
+    def reset(self, initial_frame):
+        for _ in range(self.num_frames):
+            self.frames_buffer.append(initial_frame)
 
-    def get_recent_frames(self):
-        return self.memory
+    def stack_frames(self):
+        return np.stack(self.frames_buffer, axis=-1)
+
+    def update_buffer(self, new_frame):
+        self.frames_buffer.append(new_frame)
+
 
 class ExplorationMemory:
     def __init__(self, capacity, vec_frame_shape):
@@ -43,3 +48,19 @@ class ExplorationMemory:
         indices = np.argsort(distances, axis=0)[:k]
 
         return distances[indices], indices
+
+
+class ReplayBuffer:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.memory = deque([], maxlen=capacity)
+        self.Transition = namedtuple('Transition', ('stacked_frames', 'state_infos', 'action', 'next_stacked_frames', 'next_state_infos', 'reward', 'done'))
+
+    def push(self, *args):
+        self.memory.append(self.Transition(*args))
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+    
+    def __len__(self):
+        return len(self.memory)
