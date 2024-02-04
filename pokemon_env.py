@@ -36,17 +36,20 @@ class PokemonEnv(gym.Env):
         self.resize_shape = (config["im_dim"][1], config["im_dim"][0])
         self.nb_step = 0
         self.max_step = config['ep_length']
-        self.action_freq = 48
+        self.action_freq = config['action_freq']
         self.im_dim = config["im_dim"]
 
         # Rewards
         self.last_health = 1
-        self.died_count = 0
+        self.died = 0
         self.levels = config["start_level"]
         self.start_level = config["start_level"]
         self.render_reward = config["render_reward"]
-        self.level_reward = 0
         self.exp_reward = 0
+        self.nb_badges = 0
+        self.pok_count = 1
+        self.died = False
+        self.rew_norm = 1
 
         # Exploration memory
         self.sim_frame_dist = config["sim_frame_dist"]
@@ -102,13 +105,16 @@ class PokemonEnv(gym.Env):
     def update_exp_memory(self, new_frame):
         vec = new_frame.flatten()
         dist, _ = self.exploration_memory.knn_query(vec, k=1)
-        if self.exp_reward == 0 :
+        if np.all(self.exploration_memory.frames[0] == 0) :
             self.exploration_memory.update_memory(vec)
-            self.exp_reward += 1
+            self.exp_reward = 1
 
-        elif dist > self.sim_frame_dist :
+        elif dist[0][0][0] > self.sim_frame_dist :
             self.exploration_memory.update_memory(vec)
-            self.exp_reward += 1
+            self.exp_reward = 1
+        
+        else :
+            self.exp_reward = 0
 
 
     def get_badges(self):
@@ -167,7 +173,7 @@ class PokemonEnv(gym.Env):
         frame = np.array(self.pyboy.screen_image().resize(self.resize_shape).convert('L'))
         curr_hp = self.read_hp_fraction()
         if curr_hp == 0 and self.last_health > 0:
-            self.died_count += 1
+            self.died = True
         return [curr_hp, self.get_levels(), self.get_badges(), self.pokedex_count()], frame
 
 
@@ -181,10 +187,32 @@ class PokemonEnv(gym.Env):
         Returns:
         - float: Reward value.
         """
-        self.level_reward = max(infos[1] - self.levels, 0)
+        # Levels
+        level_reward = max(infos[1] - self.levels, 0)
+        self.levels = infos[1]
+
+        # Badges
+        badge_reward = 0
+        if infos[2] > self.nb_badges :
+            badge_reward = 20 
+            self.nb_badges = infos[2]
+
+        # Death
+        death_reward = 0
+        if self.died :
+            death_reward = -3
+            self.died = False
+
+        # Pokedex
+        pok_reward = 0
+        if infos[3] > self.pok_count :
+            pok_reward = 5
+            self.pok_count = infos[3]
+
         if self.render_reward:
-            print(f"Pokédex: {5*infos[3]}, Badges: {20*infos[2]}, Death: {-3*self.died_count}, Levels: {2*self.level_reward}, exploration: {5*self.exp_reward}")
-        return 5*infos[3] + 20*infos[2] - 3*self.died_count + 2*self.level_reward + 5*self.exp_reward
+            print(f"Pokédex: {pok_reward}, Badges: {badge_reward}, Death: {death_reward}, Levels: {level_reward}, exploration: {self.exp_reward}")
+        
+        return (pok_reward + badge_reward + death_reward + level_reward + self.exp_reward) / self.rew_norm
 
 
     def reset(self):
@@ -197,13 +225,14 @@ class PokemonEnv(gym.Env):
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
         self.last_health = 1
-        self.died_count = 0
         self.levels = self.start_level
-        self.level_reward = 0
         self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
         obs = self.get_current_state()
         self.done = False
         self.nb_step = 0
+        self.exp_reward = 0
+        self.nb_badges = 0
+        self.pok_count = 1
         return obs[0], obs[1]
 
 
@@ -220,12 +249,9 @@ class PokemonEnv(gym.Env):
         if action < 6:
             self.pyboy.send_input(self.action_mapping[action])
 
-        self.pyboy.tick()
-
-        if action < 6:
-            self.pyboy.send_input(self.release_mapping[action])
-
-        for _ in range(self.action_freq-1):
+        for i in range(self.action_freq-1):
+            if i == 2:
+                self.pyboy.send_input(self.release_mapping[action])
             self.pyboy.tick()
 
         obs = self.get_current_state()
@@ -234,7 +260,6 @@ class PokemonEnv(gym.Env):
         reward = self.get_reward(obs[0])
 
         self.last_health = self.read_hp_fraction()
-        self.levels = obs[0][1]
 
         self.nb_step += 1
         if self.nb_step >= self.max_step:
