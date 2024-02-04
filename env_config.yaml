@@ -9,5 +9,6 @@ render_reward: false
 im_dim:
   - 100
   - 100
-sim_frame_dist: 15000.0
+sim_frame_dist: 5500
 render_view: false
+action_freq: 370
