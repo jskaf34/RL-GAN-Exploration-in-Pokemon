@@ -50,8 +50,7 @@ class DQNAgent:
 
     def select_action(self, state):
         sample = random.random()
-        eps_threshold = self.epsilon_end + (self.epsilon - self.epsilon_end) * \
-            math.exp(-1. * self.step / self.epsilon_decay)
+        eps_threshold = self.epsilon_end + (self.epsilon - self.epsilon_end) * math.exp(-1. * self.step / self.epsilon_decay)
         self.step += 1
         if sample > eps_threshold:
             with torch.no_grad():

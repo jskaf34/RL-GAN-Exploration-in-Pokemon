@@ -36,8 +36,7 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
             state_infos = next_state_infos
             stacked_frames = next_stacked_frames
 
-        print(f"Episode: {episode + 1}, Total Reward: {total_reward}, Epsilon: {agent.epsilon_end + (agent.epsilon - agent.epsilon_end) * \
-            math.exp(-1. * agent.step / agent.epsilon_decay)}")
+        print(f"Episode: {episode + 1}, Total Reward: {total_reward}, Epsilon: {agent.epsilon_end + (agent.epsilon - agent.epsilon_end) * math.exp(-1. * agent.step / agent.epsilon_decay)}")
 
         if episode % 5 == 0:
             torch.save(agent.q_network.state_dict(), f"{save_dir}/q_network_{episode + 1}.pth")
