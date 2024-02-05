@@ -1,6 +1,6 @@
 import torch
 from model import DQNAgent, DDQNAgent
-from datetime import datetime
+import math
 from tqdm import tqdm
 
 def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
@@ -12,7 +12,10 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
             agent.step += env.max_step / env.action_freq
             continue 
         
-        env.video_path = f"{save_dir}/video_{episode + 1}.mp4"
+        if episode % 5 == 0:
+            env.video_path = f"{save_dir}/video_{episode + 1}.mp4"
+        else: 
+            env.video_path = f"{save_dir}/video.mp4"
         infos, img = env.reset()
         state_infos = torch.tensor(infos, dtype=torch.float32).unsqueeze(0).to(agent.device)
         agent.frame_stacking.reset(img)
@@ -33,7 +36,8 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
             state_infos = next_state_infos
             stacked_frames = next_stacked_frames
 
-        print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
+        print(f"Episode: {episode + 1}, Total Reward: {total_reward}, Epsilon: {agent.epsilon_end + (agent.epsilon - agent.epsilon_end) * \
+            math.exp(-1. * agent.step / agent.epsilon_decay)}")
 
         if episode % 5 == 0:
             torch.save(agent.q_network.state_dict(), f"{save_dir}/q_network_{episode + 1}.pth")
@@ -46,8 +50,8 @@ def main(args):
     import os
 
     env = PokemonEnv('env_config.yaml')
-    # agent = DQNAgent("agent_config.yaml")
-    agent = DDQNAgent("agent_config.yaml")
+    agent = DQNAgent("agent_config.yaml")
+    # agent = DDQNAgent("agent_config.yaml")
 
     if args.from_pretrained :
         agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
