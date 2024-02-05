@@ -1,6 +1,7 @@
 import torch
 from model import DQNAgent, DDQNAgent
 from datetime import datetime
+from tqdm import tqdm
 
 def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
     agent.q_network.to(agent.device)
@@ -10,14 +11,15 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
         if episode <= 10 and from_pretrained:
             agent.step += env.max_step / env.action_freq
             continue 
-
+        
+        env.video_path = f"{save_dir}/video_{episode + 1}.mp4"
         infos, img = env.reset()
         state_infos = torch.tensor(infos, dtype=torch.float32).unsqueeze(0).to(agent.device)
         agent.frame_stacking.reset(img)
         stacked_frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
         total_reward = 0
 
-        while True:
+        for _ in tqdm(range(env.max_step)):
             action = agent.select_action((stacked_frames, state_infos))
             next_state_infos, next_state_img, reward, done = env.step(action)
             next_state_infos = torch.tensor(next_state_infos, dtype=torch.float32).unsqueeze(0).to(agent.device)
@@ -28,14 +30,8 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
             agent.update_target_network()
             total_reward += reward
 
-            if done:
-                break
-
             state_infos = next_state_infos
             stacked_frames = next_stacked_frames
-
-            if env.nb_step % 20_000 == 0 :
-                print(env.nb_step, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
         print(f"Episode: {episode + 1}, Total Reward: {total_reward}")
 

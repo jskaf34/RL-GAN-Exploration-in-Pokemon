@@ -5,7 +5,7 @@ from PIL import Image
 
 # Initialize PyBoy
 pyboy = PyBoy('jeu/PokemonRed.gb')
-pyboy.set_emulation_speed(1)
+pyboy.set_emulation_speed(0)
 with open("jeu/init_state_pokeball.state", "rb") as state_file:
     pyboy.load_state(state_file)
 
@@ -32,7 +32,7 @@ time_ = time.time()
 for i in range(1000) :
     pyboy.tick()
 end = time.time() - time_
-print(end/1000)
+print(end/1000)    
 
 # Close the emulator
 pyboy.stop()

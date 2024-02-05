@@ -5,6 +5,7 @@ from pyboy import PyBoy, WindowEvent
 from memory_addresses import *
 from memory import ExplorationMemory
 import yaml
+import mediapy as media
 
 class PokemonEnv(gym.Env):
     def __init__(self, config_file="env_config.yaml"):
@@ -53,6 +54,13 @@ class PokemonEnv(gym.Env):
         # Exploration memory
         self.sim_frame_dist = config["sim_frame_dist"]
         self.exploration_memory = ExplorationMemory(config["exp_memory_size"], self.im_dim[0]*self.im_dim[1])
+
+        # Save training video
+        self.save_video = config["save_video"]
+        self.video_path = config["video_path"]
+        if self.save_video:
+            self.video_writer = media.VideoWriter(self.video_path, (144, 160))
+            self.video_writer.__enter__()
 
         # Actions
         self.action_space = spaces.Discrete(config["nb_action"]) # 6: no action
@@ -161,7 +169,8 @@ class PokemonEnv(gym.Env):
         Returns:
         - Tuple[Dict, np.ndarray]: Tuple containing a dictionary of environment state and an array representing the screen image.
         """
-        frame = np.array(self.pyboy.screen_image().resize(self.resize_shape).convert('L'))
+        screen_image = self.pyboy.screen_image()
+        frame = np.array(screen_image.resize(self.resize_shape).convert('L'))
         curr_hp = self.read_hp_fraction()
         if curr_hp == 0 and self.last_health > 0:
             self.died = True
@@ -178,7 +187,7 @@ class PokemonEnv(gym.Env):
         - float: Reward value.
         """
         # Levels
-        level_reward = max(infos[1] - self.levels, 0)
+        level_reward = max(infos[1] - self.levels, 0) 
         self.levels = infos[1]
 
         # Badges
@@ -226,6 +235,9 @@ class PokemonEnv(gym.Env):
         self.exp_reward = 0
         self.nb_badges = 0
         self.pok_count = 1
+        if self.save_video:
+            self.video_writer = media.VideoWriter(self.video_path, (144, 160))
+            self.video_writer.__enter__()
         return obs[0], obs[1]
 
     def step(self, action):
@@ -242,10 +254,12 @@ class PokemonEnv(gym.Env):
             self.pyboy.send_input(self.action_mapping[action])
 
         for i in range(self.action_freq-1):
-            if i == 2:
+            if i == 8:
                 if action < 6:
                     self.pyboy.send_input(self.release_mapping[action])
             self.pyboy.tick()
+            if self.save_video :
+                self.video_writer.add_image(np.array(self.pyboy.screen_image()))
 
         obs = self.get_current_state()
         self.update_exp_memory(obs[1])

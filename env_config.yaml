@@ -1,6 +1,6 @@
 rom_path: "jeu/PokemonRed.gb"
-exp_memory_size: 20000
-ep_length: 211_765 # Ca correspond à 1h de jeu : 1 tick = 0.017 s
+exp_memory_size: 20_000
+ep_length: 16384 # Ca correspond à 2h de jeu 
 init_state: "jeu/init_state_pokeball.state"
 nb_action: 6
 emulation_speed: 0
@@ -10,5 +10,7 @@ im_dim:
   - 100
   - 100
 sim_frame_dist: 5500
-render_view: false
-action_freq: 370
+render_view: true
+action_freq: 24  # 370 fights animations
+video_path: ""
+save_video: true
