@@ -1,0 +1,5 @@
+pokemon_env/
+__pycache__/
+docs/
+test.py
+checkpoints/
