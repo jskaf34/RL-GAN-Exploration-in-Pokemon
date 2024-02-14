@@ -1,7 +1,7 @@
-rom_path: "jeu/PokemonRed.gb"
+rom_path: "env/jeu/PokemonRed.gb"
 exp_memory_size: 20_000
 ep_length: 16384 # Ca correspond à 2h de jeu 
-init_state: "jeu/init_state_pokeball.state"
+init_state: "env/jeu/init_state_pokeball.state"
 nb_action: 6
 emulation_speed: 0
 start_level: 8

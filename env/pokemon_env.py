@@ -2,8 +2,8 @@ import gym
 from gym import spaces
 import numpy as np
 from pyboy import PyBoy, WindowEvent
-from memory_addresses import *
-from memory import ExplorationMemory
+from .memory_addresses import *
+from .memory import ExplorationMemory
 import yaml
 import mediapy as media
 

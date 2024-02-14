@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from ..env.memory import ReplayBuffer, FrameStacker
+from env.memory import ReplayBuffer, FrameStacker
 import random
 import math
 import yaml
