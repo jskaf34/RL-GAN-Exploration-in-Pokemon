@@ -1,5 +1,5 @@
-from pokemon_env import PokemonEnv
-from model import DQNAgent
+from env.pokemon_env import PokemonEnv
+from agent.model import DQNAgent
 import torch
 
 def main(args) :
@@ -27,6 +27,6 @@ if __name__ == "__main__" :
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-w', "--model_weights", type=str, default="checkpoints/checkpoints/training_1/target_q_network_131.pth")
+    parser.add_argument('-w', "--model_weights", type=str, default="agent/checkpoints/training_1/target_q_network_6.pth")
 
     main(parser.parse_args())
