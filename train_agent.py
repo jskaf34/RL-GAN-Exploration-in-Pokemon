@@ -1,5 +1,5 @@
 import torch
-from model import DQNAgent, DDQNAgent
+from agent.model import DQNAgent, DDQNAgent
 import math
 from tqdm import tqdm
 
@@ -46,11 +46,11 @@ def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
                 env.pyboy.save_state(state_file)
 
 def main(args):
-    from pokemon_env import PokemonEnv
+    from env.pokemon_env import PokemonEnv
     import os
 
-    env = PokemonEnv('../configs/env_config.yaml')
-    agent = DQNAgent("../configs/agent_config.yaml")
+    env = PokemonEnv('configs/env_config.yaml')
+    agent = DQNAgent("configs/agent_config.yaml")
     # agent = DDQNAgent("agent_config.yaml")
 
     if args.from_pretrained :
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-sd', '--save_dir', type=str, default='checkpoints/')
+    parser.add_argument('-sd', '--save_dir', type=str, default='agent/checkpoints/')
     parser.add_argument('-b', '--batch_size', type=int, default=128)
     parser.add_argument("-ne", "--num_episodes", type=int, default=500)
     parser.add_argument('--from_pretrained', action='store_true')
