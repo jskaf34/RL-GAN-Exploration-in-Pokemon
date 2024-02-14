@@ -1,7 +1,5 @@
 pokemon_env/
 __pycache__/
-readme_images/
-Pers_README.md
 docs/
 test.py
 checkpoints/

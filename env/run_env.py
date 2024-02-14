@@ -1,9 +1,8 @@
 from pokemon_env import PokemonEnv
-import time
 from PIL import Image
 
 # Usage example:
-env = PokemonEnv("env_config.yaml")
+env = PokemonEnv("../configs/env_config.yaml")
 observation = env.reset()
 save = False
 
@@ -19,6 +18,7 @@ for i in range(10000):
 
     action = int(action)
     agent_state, frames, reward, _  = env.step(action)
+    print("Reward: ", reward, "Agent state: ", agent_state, "Frames: ", frames.shape)
     if save :
         Image.fromarray(frames).save(f"fight_frames/{i}.png")
 

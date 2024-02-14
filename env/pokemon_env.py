@@ -9,18 +9,6 @@ import mediapy as media
 
 class PokemonEnv(gym.Env):
     def __init__(self, config_file="env_config.yaml"):
-        """
-        Initialize the PokemonBlueEnv environment.
-
-        Parameters:
-        - rom_path (str): Path to the Pokemon Blue ROM file.
-        - emulation_speed (int): Emulation speed for PyBoy.
-        - start_level (int): Initial level for the player.
-        - render_reward (bool): Whether to print reward details during rendering.
-
-        Returns:
-        - None
-        """
         super().__init__()
 
         with open(config_file, 'r') as file:
@@ -42,8 +30,8 @@ class PokemonEnv(gym.Env):
 
         # Rewards
         self.last_health = 1
-        self.levels = config["start_level"]
-        self.start_level = config["start_level"]
+        self.experience_sum = config["start_experience"]
+        self.start_experience = config["start_experience"]
         self.render_reward = config["render_reward"]
         self.exp_reward = 0
         self.nb_badges = 0
@@ -105,6 +93,11 @@ class PokemonEnv(gym.Env):
         - int: Memory value.
         """
         return self.pyboy.get_memory_value(addr)
+    
+    def get_coordinates(self):
+        coords = (self.read_m(X_POS_ADDRESS), self.read_m(Y_POS_ADDRESS))
+        map_n = self.read_m(MAP_N_ADDRESS)
+        return map_n, coords
 
     def update_exp_memory(self, new_frame):
         vec = new_frame.flatten()
@@ -130,30 +123,12 @@ class PokemonEnv(gym.Env):
         return self.bit_count(self.read_m(BADGE_COUNT_ADDRESS))
 
     def pokedex_count(self):
-        """
-        Count the number of entries in the Pokedex.
-
-        Returns:
-        - int: Number of Pokedex entries.
-        """
         return sum([self.bit_count(self.read_m(addr)) for addr in POKEDEX])
-
-    def get_levels(self):
-        """
-        Get the sum of levels from various addresses.
-
-        Returns:
-        - int: Sum of player levels.
-        """
-        return sum([self.read_m(lev) for lev in LEVELS_ADDRESSES])
+    
+    def get_exp(self):
+        return sum([self.read_m(exp) for exp in POKEMON_EXP])
 
     def read_hp_fraction(self):
-        """
-        Read the player's health fraction.
-
-        Returns:
-        - float: Player's health fraction.
-        """
         def read_hp(start):
             return 256 * self.read_m(start) + self.read_m(start+1)
 
@@ -163,37 +138,23 @@ class PokemonEnv(gym.Env):
         return hp_sum / max_hp_sum
 
     def get_current_state(self):
-        """
-        Get the current state of the environment.
-
-        Returns:
-        - Tuple[Dict, np.ndarray]: Tuple containing a dictionary of environment state and an array representing the screen image.
-        """
         screen_image = self.pyboy.screen_image()
         frame = np.array(screen_image.resize(self.resize_shape).convert('L'))
         curr_hp = self.read_hp_fraction()
         if curr_hp == 0 and self.last_health > 0:
             self.died = True
-        return [curr_hp, self.get_levels(), self.get_badges(), self.pokedex_count()], frame
+        return [curr_hp, self.get_exp(), self.get_badges(), self.pokedex_count()], frame
 
     def get_reward(self, infos):
-        """
-        Calculate the reward based on the current observation.
-
-        Parameters:
-        - obs (Dict): Current environment observation.
-
-        Returns:
-        - float: Reward value.
-        """
-        # Levels
-        level_reward = max(infos[1] - self.levels, 0) 
-        self.levels = infos[1]
+        # Pokemon experience
+        experience_ratio = (infos[1] - self.experience_sum) / self.experience_sum
+        experience_reward = max(experience_ratio, 0) * 5
+        self.experience_sum = infos[1]
 
         # Badges
         badge_reward = 0
         if infos[2] > self.nb_badges :
-            badge_reward = 20 
+            badge_reward = 30 
             self.nb_badges = infos[2]
 
         # Death
@@ -205,29 +166,19 @@ class PokemonEnv(gym.Env):
         # Pokedex
         pok_reward = 0
         if infos[3] > self.pok_count :
-            pok_reward = 5
+            pok_reward = 10
             self.pok_count = infos[3]
 
-        # Levels
-        level_reward = max(infos[1] - self.levels, 0)
-        self.levels = infos[1]
-
         if self.render_reward:
-            print(f"Pokédex: {pok_reward}, Badges: {badge_reward}, Death: {death_reward}, Levels: {level_reward}, exploration: {self.exp_reward}")
+            print(f"Pokédex: {pok_reward}, Badges: {badge_reward}, Death: {death_reward}, Experiences: {experience_reward}, exploration: {self.exp_reward}")
         
-        return (pok_reward + badge_reward + death_reward + level_reward + self.exp_reward) / self.rew_norm
+        return (pok_reward + badge_reward + death_reward + experience_reward + self.exp_reward) / self.rew_norm
 
     def reset(self):
-        """
-        Reset the environment to its initial state.
-
-        Returns:
-        - Tuple[Dict, np.ndarray]: Initial environment state.
-        """
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
         self.last_health = 1
-        self.levels = self.start_level
+        self.experience_sum = self.start_experience
         self.exploration_memory = ExplorationMemory(20_000, self.im_dim[0]*self.im_dim[1])
         obs = self.get_current_state()
         self.done = False
@@ -241,15 +192,6 @@ class PokemonEnv(gym.Env):
         return obs[0], obs[1]
 
     def step(self, action):
-        """
-        Take a step in the environment based on the given action.
-
-        Parameters:
-        - action (int): Action to take.
-
-        Returns:
-        - Tuple[Dict, np.ndarray, float]: Tuple containing the next environment state, screen image, and reward.
-        """
         if action < 6:
             self.pyboy.send_input(self.action_mapping[action])
 

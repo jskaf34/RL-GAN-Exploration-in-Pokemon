@@ -6,6 +6,7 @@ from tqdm import tqdm
 def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
     agent.q_network.to(agent.device)
     agent.target_q_network.to(agent.device)
+    agent.epsilon_decay = env.max_step * num_episodes
 
     for episode in range(num_episodes):
         if episode <= 10 and from_pretrained:
@@ -48,8 +49,8 @@ def main(args):
     from pokemon_env import PokemonEnv
     import os
 
-    env = PokemonEnv('env_config.yaml')
-    agent = DQNAgent("agent_config.yaml")
+    env = PokemonEnv('../configs/env_config.yaml')
+    agent = DQNAgent("../configs/agent_config.yaml")
     # agent = DDQNAgent("agent_config.yaml")
 
     if args.from_pretrained :
