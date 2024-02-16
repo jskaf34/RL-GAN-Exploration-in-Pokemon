@@ -6,13 +6,8 @@ from tqdm import tqdm
 def train(env, agent, num_episodes, batch_size, save_dir, from_pretrained):
     agent.q_network.to(agent.device)
     agent.target_q_network.to(agent.device)
-    agent.epsilon_decay = env.max_step * num_episodes
 
-    for episode in range(num_episodes):
-        if episode <= 10 and from_pretrained:
-            agent.step += env.max_step / env.action_freq
-            continue 
-        
+    for episode in range(num_episodes):        
         if episode % 5 == 0:
             env.video_path = f"{save_dir}/video_{episode + 1}.mp4"
         else: 
@@ -51,11 +46,6 @@ def main(args):
 
     env = PokemonEnv('configs/env_config.yaml')
     agent = DQNAgent("configs/agent_config.yaml")
-    # agent = DDQNAgent("agent_config.yaml")
-
-    if args.from_pretrained :
-        agent.q_network.load_state_dict(torch.load("checkpoints/training_1/q_network_11.pth"))
-        agent.target_q_network.load_state_dict(torch.load("checkpoints/training_1/target_q_network_11.pth"))
 
     print("Using device : ", agent.device)
 
@@ -72,8 +62,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-sd', '--save_dir', type=str, default='agent/checkpoints/')
-    parser.add_argument('-b', '--batch_size', type=int, default=128)
-    parser.add_argument("-ne", "--num_episodes", type=int, default=500)
+    parser.add_argument('-b', '--batch_size', type=int, default=512)
+    parser.add_argument("-ne", "--num_episodes", type=int, default=1000)
     parser.add_argument('--from_pretrained', action='store_true')
     parser.add_argument("-na", '--nb_action', type=int, default=6)
 
