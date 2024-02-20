@@ -3,3 +3,4 @@ __pycache__/
 docs/
 test.py
 checkpoints/
+gan/cats/
