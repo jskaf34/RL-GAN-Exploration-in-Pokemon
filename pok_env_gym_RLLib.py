@@ -5,12 +5,13 @@ from pyboy import PyBoy, WindowEvent
 from memory_addresses import *
 from memory import ExplorationMemory
 import mediapy as media
+import yaml
 
 
 class PokemonEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, config, render_mode=None) -> None:
+    def __init__(self, config_path = "env_config.yaml", render_mode='human') -> None:
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -23,6 +24,8 @@ class PokemonEnv(gym.Env):
         Returns:
         - None
         """
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
 
         self.observation_space = Box(low=0, high=255, shape=config["im_dim"],  dtype=np.uint8)
         self.action_space = Discrete(config["nb_action"]) # 6: no action
