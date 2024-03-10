@@ -19,10 +19,19 @@ torch, _ = try_import_torch()
 
 
 @PublicAPI
+<<<<<<< HEAD
 class ExplorationGAN(Exploration):
     """ExplorationGAN Exploration class that produces exploration actions.
 
     Given an observation, this class produces an action depending on the novelty of the state observed.
+=======
+class EpsilonGreedy(Exploration):
+    """Epsilon-greedy Exploration class that produces exploration actions.
+
+    When given a Model's output and a current epsilon value (based on some
+    Schedule), it produces a random action (if rand(1) < eps) or
+    uses the model-computed one (if rand(1) >= eps).
+>>>>>>> b364b4c (Changes due to rebasing to main)
     """
 
     def __init__(
@@ -30,9 +39,20 @@ class ExplorationGAN(Exploration):
         action_space: gym.spaces.Space,
         *,
         framework: str,
+<<<<<<< HEAD
         **kwargs,
     ):
         """Create an ExplorationGAN exploration class.
+=======
+        initial_epsilon: float = 1.0,
+        final_epsilon: float = 0.05,
+        warmup_timesteps: int = 0,
+        epsilon_timesteps: int = int(1e5),
+        epsilon_schedule: Optional[Schedule] = None,
+        **kwargs,
+    ):
+        """Create an EpsilonGreedy exploration class.
+>>>>>>> b364b4c (Changes due to rebasing to main)
 
         Args:
             action_space: The action space the exploration should occur in.
@@ -51,6 +71,21 @@ class ExplorationGAN(Exploration):
         assert framework is not None
         super().__init__(action_space=action_space, framework=framework, **kwargs)
 
+<<<<<<< HEAD
+=======
+        self.epsilon_schedule = from_config(
+            Schedule, epsilon_schedule, framework=framework
+        ) or PiecewiseSchedule(
+            endpoints=[
+                (0, initial_epsilon),
+                (warmup_timesteps, initial_epsilon),
+                (warmup_timesteps + epsilon_timesteps, final_epsilon),
+            ],
+            outside_value=final_epsilon,
+            framework=self.framework,
+        )
+
+>>>>>>> b364b4c (Changes due to rebasing to main)
         # The current timestep value (tf-var or python int).
         self.last_timestep = get_variable(
             np.array(0, np.int64),
@@ -62,7 +97,32 @@ class ExplorationGAN(Exploration):
         # Build the tf-info-op.
         if self.framework == "tf":
             self._tf_state_op = self.get_state()
+<<<<<<< HEAD
 
+=======
+    
+    @override(Exploration)
+    def before_compute_actions(
+        self,
+        *,
+        timestep: Optional[Union[TensorType, int]] = None,
+        explore: Optional[Union[TensorType, bool]] = None,
+        tf_sess: Optional["tf.Session"] = None,
+        **kwargs
+    ):
+        """Hook for preparations before policy.compute_actions() is called.
+
+        Args:
+            timestep: An optional timestep tensor.
+            explore: An optional explore boolean flag.
+            tf_sess: The tf-session object to use.
+            **kwargs: Forward compatibility kwargs.
+        """
+        pass
+
+    # fmt: off
+    # __sphinx_doc_begin_get_exploration_action__
+>>>>>>> b364b4c (Changes due to rebasing to main)
 
     @override(Exploration)
     def get_exploration_action(
