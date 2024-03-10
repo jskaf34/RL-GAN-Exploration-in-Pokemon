@@ -7,10 +7,10 @@ emulation_speed: 0
 start_level: 8
 render_reward: true
 im_dim:
-  - 100
-  - 100
-sim_frame_dist: 5500
+  - 120
+  - 120
+sim_frame_dist: 5700
 render_view: true
 action_freq: 24  # 370 fights animations
 video_path: ""
-save_video: true
+save_video: false

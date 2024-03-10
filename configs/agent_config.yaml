@@ -2,8 +2,8 @@ action_size: 6
 learning_rate: 0.0001
 gamma: 0.999
 epsilon_start: 0.9
-epsilon_end: 0.05
-epsilon_decay: 100000
+epsilon_end: 0.15
+epsilon_decay: 10000
 image_shape:
   - 100
   - 100

@@ -3,9 +3,9 @@ from model import DQNAgent
 import torch
 
 def main(args) :
-    env = PokemonEnv("jeu/PokemonRed.gb", emulation_speed=0, render_reward=True, render_view=True)
+    env = PokemonEnv("env_config.yaml")
     infos, img = env.reset()
-    agent = DQNAgent()
+    agent = DQNAgent("agent_config.yaml")
     agent.target_q_network.load_state_dict(torch.load(args.model_weights))
     agent.target_q_network.to(agent.device)
 
@@ -15,6 +15,7 @@ def main(args) :
 
     for _ in range(10000):
         action = agent.target_q_network(frames, infos).max(1).indices.item()
+        print(action)
         infos, img, reward, done  = env.step(action)
         agent.frame_stacking.update_buffer(img)
         frames = torch.tensor(agent.frame_stacking.stack_frames(), dtype=torch.float32).permute(2, 0, 1).unsqueeze(0).to(agent.device)
@@ -26,4 +27,6 @@ if __name__ == "__main__" :
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-w', "--model_weights", type=str, default="checkpoints/training_1/target_q_network_11.pth")
+    parser.add_argument('-w', "--model_weights", type=str, default="checkpoints/checkpoints/training_1/target_q_network_131.pth")
+
+    main(parser.parse_args())
