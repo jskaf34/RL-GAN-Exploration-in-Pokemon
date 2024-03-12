@@ -2,16 +2,18 @@ import gymnasium as gym
 from gymnasium.spaces import Discrete, Box
 import numpy as np
 from pyboy import PyBoy, WindowEvent
-from memory_addresses import *
-from memory import ExplorationMemory
+from .memory_addresses import *
+from .memory import ExplorationMemory
 import mediapy as media
 import yaml
+import os
 
 
 class PokemonEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    
 
-    def __init__(self, config_path = "env_config.yaml", render_mode='human') -> None:
+    def __init__(self, config_path = "./env/env_config.yaml", render_mode='human') -> None:
         """
         Initialize the PokemonBlueEnv environment.
 
