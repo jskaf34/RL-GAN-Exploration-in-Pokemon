@@ -113,6 +113,7 @@ class GANDQNTorchPolicy(DQNTorchPolicy):
                 "distribution class.".format(dist_class.__name__)
             )
         action_dist = dist_class(dist_inputs, self.model)
+        obs = input_dict[SampleBatch.CUR_OBS]
 
         # Get the exploration action from the forward results.
         actions, logp = self.exploration.get_exploration_action(
