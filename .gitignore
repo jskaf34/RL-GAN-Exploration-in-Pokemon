@@ -4,4 +4,3 @@ docs/
 test.py
 checkpoints/
 gan/cats/
-test_rllib.ipynb
