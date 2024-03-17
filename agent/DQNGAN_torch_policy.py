@@ -1,18 +1,17 @@
 import logging
-from typing import Dict, List, Tuple
+import functools
+import torch
+
+from torch import nn
+from typing import Tuple, Optional
+
 from ray.rllib.algorithms.dqn.dqn_torch_policy import DQNTorchPolicy
 from ray.rllib.policy.sample_batch import SampleBatch
-import torch
-from torch import nn
-from ray.rllib.utils.torch_utils import (
-    reduce_mean_ignore_inf,
-)
+from ray.rllib.utils.torch_utils import reduce_mean_ignore_inf
 from ray.rllib.utils.typing import TensorType, List, Dict
 from ray.rllib.utils.numpy import convert_to_numpy
 from ray.rllib.models.torch.torch_action_dist import TorchDistributionWrapper
-import functools
 from ray.rllib.utils.annotations import override
-from typing import Optional
 from ray.rllib.policy.torch_policy import TorchPolicy
 
 

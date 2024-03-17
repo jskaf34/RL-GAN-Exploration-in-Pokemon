@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 import tree  # pip install dm_tree
-import random
+
 from typing import Union, Optional
 
 from ray.rllib.models.torch.torch_action_dist import TorchMultiActionDistribution
@@ -10,7 +10,6 @@ from ray.rllib.utils.annotations import override, PublicAPI
 from ray.rllib.utils.exploration.exploration import Exploration, TensorType
 from ray.rllib.utils.framework import try_import_tf, try_import_torch, get_variable
 from ray.rllib.utils.torch_utils import FLOAT_MIN
-from typing import Any
 
 tf1, tf, tfv = try_import_tf()
 torch, _ = try_import_torch()

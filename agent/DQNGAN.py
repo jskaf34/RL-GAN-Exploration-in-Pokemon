@@ -1,11 +1,9 @@
 import logging
-from typing import List, Optional, Type
+
+from typing import Optional, Type
 
 from ray.rllib.algorithms.algorithm_config import AlgorithmConfig
-
-from ray.rllib.algorithms.dqn.dqn import (
-    DQN
-)
+from ray.rllib.algorithms.dqn.dqn import DQN
 from ray.rllib.policy.policy import Policy
 from ray.rllib.utils.annotations import override
 
