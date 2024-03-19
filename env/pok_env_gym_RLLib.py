@@ -13,7 +13,7 @@ class PokemonEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
     
 
-    def __init__(self, config_path = "./env/env_config.yaml", render_mode='human') -> None:
+    def __init__(self, config_path_from_dir_folder = "configs/env_config.yaml", render_mode='human') -> None:
         """
         Initialize the PokemonBlueEnv environment.
 
@@ -26,6 +26,9 @@ class PokemonEnv(gym.Env):
         Returns:
         - None
         """
+        dir_project = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config_path = os.path.join(dir_project, config_path_from_dir_folder)
+
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
 
@@ -88,6 +91,9 @@ class PokemonEnv(gym.Env):
             5: WindowEvent.RELEASE_BUTTON_B,
         }
 
+        self.seen_coords = {}
+        self.previous_coords = None
+
 
     @staticmethod
     def bit_count(bits):
@@ -127,6 +133,68 @@ class PokemonEnv(gym.Env):
         
         else :
             self.exp_reward = 0
+    
+    def get_ixy_coordinates(self):
+        """
+        Retrieve the coordinates of the player.
+
+        Returns:
+        - int: Coordinates of the player
+        """
+        return (self.bit_count(self.read_m(MAP_N_ADDRESS)), 
+            self.bit_count(self.read_m(X_POS_ADDRESS)), 
+            self.bit_count(self.read_m(Y_POS_ADDRESS))
+        )
+    
+    def update_seen_coords(self):
+        map_n, x_pos, y_pos = self.get_ixy_coordinates()
+        coord_string = f"x:{x_pos} y:{y_pos} m:{map_n}"
+
+        if coord_string in self.seen_coords:         
+            self.seen_coords[coord_string] += 1
+        else : 
+            self.seen_coords[coord_string] = 1
+
+    def get_map_location(self, map_idx):
+        map_locations = {
+            0: "Pallet Town",
+            1: "Viridian City",
+            2: "Pewter City",
+            3: "Cerulean City",
+            12: "Route 1",
+            13: "Route 2",
+            14: "Route 3",
+            15: "Route 4",
+            33: "Route 22",
+            37: "Red house first",
+            38: "Red house second",
+            39: "Blues house",
+            40: "oaks lab",
+            41: "Pokémon Center (Viridian City)",
+            42: "Poké Mart (Viridian City)",
+            43: "School (Viridian City)",
+            44: "House 1 (Viridian City)",
+            47: "Gate (Viridian City/Pewter City) (Route 2)",
+            49: "Gate (Route 2)",
+            50: "Gate (Route 2/Viridian Forest) (Route 2)",
+            51: "viridian forest",
+            52: "Pewter Museum (floor 1)",
+            53: "Pewter Museum (floor 2)",
+            54: "Pokémon Gym (Pewter City)",
+            55: "House with disobedient Nidoran♂ (Pewter City)",
+            56: "Poké Mart (Pewter City)",
+            57: "House with two Trainers (Pewter City)",
+            58: "Pokémon Center (Pewter City)",
+            59: "Mt. Moon (Route 3 entrance)",
+            60: "Mt. Moon",
+            61: "Mt. Moon",
+            68: "Pokémon Center (Route 4)",
+            193: "Badges check gate (Route 22)"
+        }
+        if map_idx in map_locations.keys():
+            return map_locations[map_idx]
+        else:
+            return "Unknown Location"
 
     def get_badges(self):
         """
@@ -196,7 +264,8 @@ class PokemonEnv(gym.Env):
         return {"current_hp" : self.read_hp_fraction(), 
                 "levels": self.get_levels(),
                 "badges" : self.get_badges(),
-                "pokedex_count":self.pokedex_count()}
+                "pokedex_count":self.pokedex_count(),
+                "coordinates": self.get_ixy_coordinates()}
     
     def _get_reward(self):
         """
@@ -256,7 +325,8 @@ class PokemonEnv(gym.Env):
         if self.save_video:
             self.video_writer = media.VideoWriter(self.video_path, (144, 160))
             self.video_writer.__enter__()
-
+        
+        self.seen_coords = {}
         observation = self._get_obs()
         info = self._get_info()
 
@@ -275,6 +345,9 @@ class PokemonEnv(gym.Env):
             #     self.video_writer.add_image(np.array(self.pyboy.screen_image()))
         observation = self._get_obs()
         info = self._get_info()
+        if self.previous_coords != info['coordinates']:
+            self.update_seen_coords()
+            self.previous_coords = info['coordinates']
         reward = self._get_reward()
         self.nb_step += 1
         truncated = self.nb_step >= self.max_step
