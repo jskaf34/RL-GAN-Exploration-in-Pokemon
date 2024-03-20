@@ -345,16 +345,12 @@ class PokemonEnv(gym.Env):
             #     self.video_writer.add_image(np.array(self.pyboy.screen_image()))
         observation = self._get_obs()
         info = self._get_info()
-        if self.previous_coords != info['coordinates']:
-            self.update_seen_coords()
-            self.previous_coords = info['coordinates']
+        self.update_seen_coords()
         reward = self._get_reward()
         self.nb_step += 1
         truncated = self.nb_step >= self.max_step
         self.last_health = self.read_hp_fraction()
         terminated = self.last_health == 0 or truncated
-
-
 
         return observation, reward, terminated, truncated, info
 
