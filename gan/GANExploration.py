@@ -10,6 +10,8 @@ from ray.rllib.utils.annotations import override, PublicAPI
 from ray.rllib.utils.exploration.exploration import Exploration, TensorType
 from ray.rllib.utils.framework import try_import_tf, try_import_torch, get_variable
 from ray.rllib.utils.torch_utils import FLOAT_MIN
+from ray.rllib.utils.numpy import convert_to_numpy
+from typing import Any
 
 tf1, tf, tfv = try_import_tf()
 torch, _ = try_import_torch()
@@ -17,10 +19,18 @@ torch, _ = try_import_torch()
 class RandomModel(torch.nn.Module):
     def __init__(self, input_size):
         super(RandomModel, self).__init__()
-        self.linear = torch.nn.Linear(input_size, 1)
+        self.input_size = input_size
+        self.linear = torch.nn.Linear(self.input_size, 1)
 
     def forward(self, x):
-        return self.linear(x)
+        # flatten the input with respect to the batch size
+        x = x.flatten(start_dim=1)
+        x = x.float()
+        x = self.linear(x)
+        # transform to 0/1 thresholding
+        x = torch.sigmoid(x)
+        x = (x > 0.5)
+        return x
 
 def load_gan(file_path_for_gan_weights: str, input_size: int):
     #Create a random torch model for testing
@@ -50,7 +60,7 @@ class GANExploration(Exploration):
         **kwargs
 
     ):
-        """Create an EpsilonGreedy exploration class.
+        """Create an GANexploration class.
 
         Args:
             action_space: The action space the exploration should occur in.
@@ -87,16 +97,24 @@ class GANExploration(Exploration):
                 temp *= i
             input_size = temp
         self.GAN = load_gan(file_path_for_gan_weights, input_size=input_size)
-        self.actions_to_explore = torch.tensor([True]*self.action_space.n)
+        #initialize the actions_to_explore with the number of workers
+        list_of_booleans = [True]*self.num_workers
+        self.actions_to_explore = torch.tensor(list_of_booleans, dtype=torch.bool)
 
 
     @override(Exploration)
     def before_compute_actions(
         self,
-        *, 
-        observations: TensorType):
+        *,
+        explore: bool,
+        timestep: Union[int, TensorType],
+        observations: TensorType,
+        **kwargs):
         """Implement the action_to_explore : we give to the GAN the batch of observations, and the GAN will tell us which actions to explore"""
-        self.actions_to_explore = self.GAN(observations)
+        output = self.GAN(observations)
+        #We reshape to have a tensor of size (1, batch_size)
+        output = output.view(1, -1).squeeze(0)
+        self.actions_to_explore = output
 
     @override(Exploration)
     def get_exploration_action(
@@ -186,6 +204,7 @@ class GANExploration(Exploration):
                     torch.multinomial(random_valid_action_logits, 1), axis=1
                 )
 
+
                 # Pick a random action if actions_to_explore is True
                 action = torch.where(
                     self.actions_to_explore,
@@ -197,3 +216,24 @@ class GANExploration(Exploration):
         # Return the deterministic "sample" (argmax) over the logits.
         else:
             return exploit_action, action_logp
+
+    @override(Exploration)
+    def get_state(self, sess: Optional["tf.Session"] = None):
+        if sess:
+            return sess.run(self._tf_state_op)
+        eps = self.epsilon_schedule(self.last_timestep)
+        return {
+            "cur_epsilon": convert_to_numpy(eps) if self.framework != "tf" else eps,
+            "last_timestep": convert_to_numpy(self.last_timestep)
+            if self.framework != "tf"
+            else self.last_timestep,
+        }
+
+    @override(Exploration)
+    def set_state(self, state: dict, sess: Optional["tf.Session"] = None) -> None:
+        if self.framework == "tf":
+            self.last_timestep.load(state["last_timestep"], session=sess)
+        elif isinstance(self.last_timestep, int):
+            self.last_timestep = state["last_timestep"]
+        else:
+            self.last_timestep.assign(state["last_timestep"])

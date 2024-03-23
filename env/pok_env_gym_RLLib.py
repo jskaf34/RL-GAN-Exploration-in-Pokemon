@@ -328,6 +328,8 @@ class PokemonEnv(gym.Env):
         return observation, info
     
     def step(self, action):
+        # if type(action) == np.ndarray:
+        #     action = action[0]
         if action < 6:
             self.pyboy.send_input(self.action_mapping[action])
 

@@ -45,7 +45,6 @@ class GANDQNTorchPolicy(DQNTorchPolicy):
                 if state_batches
                 else None
             )
-
             return self._compute_action_helper(
                 input_dict, state_batches, seq_lens, explore, timestep
             )
@@ -67,7 +66,7 @@ class GANDQNTorchPolicy(DQNTorchPolicy):
         if self.model:
             self.model.eval()
         # Call the exploration before_compute_actions hook.
-        self.exploration.before_compute_actions(explore=explore, timestep=timestep)
+        self.exploration.before_compute_actions(explore=explore, timestep=timestep, observations=input_dict[SampleBatch.CUR_OBS])
         try:
             dist_inputs, dist_class, state_out = self.action_distribution_fn(
                 self,
@@ -100,7 +99,6 @@ class GANDQNTorchPolicy(DQNTorchPolicy):
                 )
             else:
                 raise e
-
         if not (
             isinstance(dist_class, functools.partial)
             or issubclass(dist_class, TorchDistributionWrapper)
@@ -112,7 +110,6 @@ class GANDQNTorchPolicy(DQNTorchPolicy):
                 "distribution class.".format(dist_class.__name__)
             )
         action_dist = dist_class(dist_inputs, self.model)
-        obs = input_dict[SampleBatch.CUR_OBS]
 
         # Get the exploration action from the forward results.
         actions, logp = self.exploration.get_exploration_action(
