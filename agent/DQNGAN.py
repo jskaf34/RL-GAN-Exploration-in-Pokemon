@@ -7,7 +7,7 @@ from ray.rllib.algorithms.dqn.dqn import DQN
 from ray.rllib.policy.policy import Policy
 from ray.rllib.utils.annotations import override
 
-from DQNGAN_torch_policy import GANDQNTorchPolicy
+from .DQNGAN_torch_policy import GANDQNTorchPolicy
 
 
 logger = logging.getLogger(__name__)
