@@ -78,7 +78,7 @@ class GAN():
         optimizer_g = torch.optim.Adam(self.generator.parameters(), lr=lr, betas=(0.5, 0.999))
         
         with open(log_file, "w") as log:
-            log.write("Epoch,Real Score,Fake Score\n")
+            log.write("Epoch, Real Score, Fake Score, Loss Generator, Loss discriminator\n")
 
         for epoch in range(epochs):
             for real_images, _ in tqdm(train_dl, desc=f"Training {epoch+1}/{epochs}"):
