@@ -183,12 +183,12 @@ if __name__ == "__main__":
         config = yaml.safe_load(file)
 
     DATA_DIR = config["training_params"]["data_dir"]
-    EPOCHS = config["training_params"]["epochs"]
-    LR = config["training_params"]["lr"]
-    BATCH_SIZE = config["training_params"]["batch_size"]
+    EPOCHS = int(config["training_params"]["epochs"])
+    LR = float(config["training_params"]["lr"])
+    BATCH_SIZE = int(config["training_params"]["batch_size"])
 
-    LATENT_SIZE = config["gan_params"]["latent_size"]
-    IMAGE_SIZE = config["gan_params"]["image_size"]
+    LATENT_SIZE = int(config["gan_params"]["latent_size"])
+    IMAGE_SIZE = int(config["gan_params"]["image_size"])
     
     stats = (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)
 
@@ -204,6 +204,6 @@ if __name__ == "__main__":
         epochs=EPOCHS, 
         lr=LR, 
         train_dl=train_dl, 
-        log_interval = config["training_params"]["log_interval"], 
+        log_interval = int(config["training_params"]["log_interval"]), 
         log_file="./training_log"
     )
