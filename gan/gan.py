@@ -81,6 +81,7 @@ class GAN():
             log.write("Epoch, Real Score, Fake Score, Loss Generator, Loss discriminator\n")
 
         for epoch in range(epochs):
+            num_epoch = int(epoch) + 1
             for real_images, _ in tqdm(train_dl, desc=f"Training {epoch+1}/{epochs}"):
                 batch_size = real_images.shape[0]
 
@@ -100,23 +101,17 @@ class GAN():
         with open(log_file, "w") as log:
             log.write(f"Epoch {epoch+1} : Real score {real_score} Fake score {fake_score} Loss generator {loss_g} Loss discriminator {loss_d}\n")
 
-        if (epoch + 1) % log_interval == 0:
+        if num_epoch % log_interval == 0:
             print(f"Logging scores at epoch {epoch + 1}:")
             print("Real Score:", real_scores)
             print("Fake Score:", fake_scores)
         
         # Save model every log_interval epochs
-        if (epoch + 1) % log_interval == 0:
+        if num_epoch % log_interval == 0:
             torch.save({
                 'epoch': epoch,
                 'generator_state_dict': self.generator.state_dict(),
                 'discriminator_state_dict': self.discriminator.state_dict(),
-                'optimizer_g_state_dict': optimizer_g.state_dict(),
-                'optimizer_d_state_dict': optimizer_d.state_dict(),
-                'loss_g': loss_g,
-                'loss_d': loss_d,
-                'real_scores': real_scores,
-                'fake_scores': fake_scores
             }, f"gan_game_{epoch+1}.pth")
         
         return losses_g, losses_d, real_scores, fake_scores

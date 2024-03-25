@@ -1,12 +1,15 @@
-import gymnasium as gym
-from gymnasium.spaces import Discrete, Box
+import yaml
+import os
 import numpy as np
+import pandas as pd
+import mediapy as media
+import gymnasium as gym
+
 from pyboy import PyBoy, WindowEvent
 from .memory_addresses import *
 from .memory import ExplorationMemory
-import mediapy as media
-import yaml
-import os
+from gymnasium.spaces import Discrete, Box
+
 
 
 class PokemonEnv(gym.Env):
@@ -91,8 +94,7 @@ class PokemonEnv(gym.Env):
             5: WindowEvent.RELEASE_BUTTON_B,
         }
 
-        self.seen_coords = {}
-        self.previous_coords = None
+        self.data_info = pd.DataFrame(columns=["current_hp","levels", "badges", "pokedex_count", "m", "x", "y"])
 
 
     @staticmethod
@@ -134,7 +136,7 @@ class PokemonEnv(gym.Env):
         else :
             self.exp_reward = 0
     
-    def get_ixy_coordinates(self):
+    def get_mxy_coordinates(self):
         """
         Retrieve the coordinates of the player.
 
@@ -145,15 +147,6 @@ class PokemonEnv(gym.Env):
             self.bit_count(self.read_m(X_POS_ADDRESS)), 
             self.bit_count(self.read_m(Y_POS_ADDRESS))
         )
-    
-    def update_seen_coords(self):
-        map_n, x_pos, y_pos = self.get_ixy_coordinates()
-        coord_string = f"x:{x_pos} y:{y_pos} m:{map_n}"
-
-        if coord_string in self.seen_coords:         
-            self.seen_coords[coord_string] += 1
-        else : 
-            self.seen_coords[coord_string] = 1
 
     def get_map_location(self, map_idx):
         map_locations = {
@@ -238,7 +231,6 @@ class PokemonEnv(gym.Env):
         max_hp_sum = max(max_hp_sum, 1)
         return hp_sum / max_hp_sum
 
-
     def _get_obs(self):
         """
         Get the current state of the environment.
@@ -261,11 +253,14 @@ class PokemonEnv(gym.Env):
         Returns:
         - Dict: Dictionary containing environment information.
         """
+        m, x, y = self.get_mxy_coordinates()
         return {"current_hp" : self.read_hp_fraction(), 
                 "levels": self.get_levels(),
                 "badges" : self.get_badges(),
                 "pokedex_count":self.pokedex_count(),
-                "coordinates": self.get_ixy_coordinates()}
+                "m": m, 
+                "x": x, 
+                "y": y}
     
     def _get_reward(self):
         """
@@ -325,8 +320,8 @@ class PokemonEnv(gym.Env):
         if self.save_video:
             self.video_writer = media.VideoWriter(self.video_path, (144, 160))
             self.video_writer.__enter__()
+        self.data_info = pd.DataFrame(columns=["current_hp","levels", "badges", "pokedex_count", "m", "x", "y"])
         
-        self.seen_coords = {}
         observation = self._get_obs()
         info = self._get_info()
 
@@ -345,7 +340,7 @@ class PokemonEnv(gym.Env):
             #     self.video_writer.add_image(np.array(self.pyboy.screen_image()))
         observation = self._get_obs()
         info = self._get_info()
-        self.update_seen_coords()
+        self.data_info.loc[len(self.data_info)] = info
         reward = self._get_reward()
         self.nb_step += 1
         truncated = self.nb_step >= self.max_step
@@ -353,6 +348,3 @@ class PokemonEnv(gym.Env):
         terminated = self.last_health == 0 or truncated
 
         return observation, reward, terminated, truncated, info
-
-       
-        
