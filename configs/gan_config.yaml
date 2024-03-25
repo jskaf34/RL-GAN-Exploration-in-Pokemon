@@ -1,0 +1,12 @@
+gan_params: 
+ latent_size : 256
+ image_size : 64
+
+training_params: 
+ data_dir : "./screenshots"
+ epochs : 50
+ lr : 0.00001
+ batch_size : 8
+ log_interval : 5
+ stats : [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
+ 

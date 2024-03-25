@@ -1,3 +1,6 @@
+import os
+import yaml
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,7 +20,7 @@ class GAN():
         self.discriminator = self.create_discriminator()
         self.discriminator.to(self.device)
         self.generator = self.create_generator(latent_size)
-
+        self.generator.to(self.device)
 
     def train_generator(self, optimizer_g, batch_size):
         self.discriminator.eval()
@@ -65,7 +68,7 @@ class GAN():
         optimizer_d.step()
         return loss.item(), real_score, fake_score
 
-    def train_gan(self, epochs, lr, train_dl):
+    def train_gan(self, epochs, lr, train_dl, log_interval, log_file):
         losses_g = []
         losses_d = []
         real_scores = []
@@ -74,8 +77,12 @@ class GAN():
         optimizer_d = torch.optim.Adam(self.discriminator.parameters(), lr=lr, betas=(0.5, 0.999))
         optimizer_g = torch.optim.Adam(self.generator.parameters(), lr=lr, betas=(0.5, 0.999))
         
+        with open(log_file, "w") as log:
+            log.write("Epoch, Real Score, Fake Score, Loss Generator, Loss discriminator\n")
+
         for epoch in range(epochs):
-            for real_images, _ in tqdm(train_dl):
+            num_epoch = int(epoch) + 1
+            for real_images, _ in tqdm(train_dl, desc=f"Training {epoch+1}/{epochs}"):
                 batch_size = real_images.shape[0]
 
                 real_images = real_images.to(self.device)
@@ -90,6 +97,22 @@ class GAN():
             
             print("Epoch [{}/{}], loss_g: {:.4f}, loss_d: {:.4f}, real_score: {:.4f}, fake_score: {:.4f}".format(
                 epoch+1, epochs, loss_g, loss_d, real_score, fake_score))
+        
+        with open(log_file, "w") as log:
+            log.write(f"Epoch {epoch+1} : Real score {real_score} Fake score {fake_score} Loss generator {loss_g} Loss discriminator {loss_d}\n")
+
+        if num_epoch % log_interval == 0:
+            print(f"Logging scores at epoch {epoch + 1}:")
+            print("Real Score:", real_scores)
+            print("Fake Score:", fake_scores)
+        
+        # Save model every log_interval epochs
+        if num_epoch % log_interval == 0:
+            torch.save({
+                'epoch': epoch,
+                'generator_state_dict': self.generator.state_dict(),
+                'discriminator_state_dict': self.discriminator.state_dict(),
+            }, f"gan_game_{epoch+1}.pth")
         
         return losses_g, losses_d, real_scores, fake_scores
 
@@ -156,25 +179,31 @@ class GAN():
         )
 
 if __name__ == "__main__": 
-    DATA_DIR = "./data"
+    with open("../configs/gan_config.yaml", 'r') as file:
+        config = yaml.safe_load(file)
 
-    EPOCHS = 10
-    LATENT_SIZE = 256
-    LR = 1e-6
+    DATA_DIR = config["training_params"]["data_dir"]
+    EPOCHS = int(config["training_params"]["epochs"])
+    LR = float(config["training_params"]["lr"])
+    BATCH_SIZE = int(config["training_params"]["batch_size"])
 
-    IMAGE_SIZE = 64
-    BATCH_SIZE = 16
+    LATENT_SIZE = int(config["gan_params"]["latent_size"])
+    IMAGE_SIZE = int(config["gan_params"]["image_size"])
+    
     stats = (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)
 
-    train_ds = ImageFolder(DATA_DIR, transform=tt.Compose([ tt.Resize(IMAGE_SIZE),
+    train_ds = ImageFolder(DATA_DIR, transform=tt.Compose([tt.Resize(IMAGE_SIZE),
                                                         tt.CenterCrop(IMAGE_SIZE),
                                                         tt.ToTensor(),
                                                         tt.Normalize(*stats)]))
     train_dl = DataLoader(train_ds, BATCH_SIZE, shuffle=True, num_workers=3, pin_memory=True)
 
     gan = GAN(LATENT_SIZE, IMAGE_SIZE)
+
     history = gan.train_gan(
         epochs=EPOCHS, 
         lr=LR, 
-        train_dl=train_dl
+        train_dl=train_dl, 
+        log_interval = int(config["training_params"]["log_interval"]), 
+        log_file="./training_log"
     )
