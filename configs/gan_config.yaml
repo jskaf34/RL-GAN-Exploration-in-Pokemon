@@ -3,10 +3,10 @@ gan_params:
  image_size : 64
 
 training_params: 
- data_dir : "./screenshots"
- epochs : 50
+ data_dir : "./screenshots/train"
+ epochs : 150
  lr : 0.00001
  batch_size : 8
- log_interval : 5
+ log_interval : 10
  stats : [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5]]
  

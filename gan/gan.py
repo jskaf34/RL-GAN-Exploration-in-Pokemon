@@ -9,6 +9,7 @@ import torchvision.transforms as tt
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+from torchvision.utils import save_image
 
 class GAN(): 
     def __init__(self, latent_size, image_size):
@@ -21,6 +22,32 @@ class GAN():
         self.discriminator.to(self.device)
         self.generator = self.create_generator(latent_size)
         self.generator.to(self.device)
+
+    def generate_images(self, epoch=None, num_images=5, output_dir="generated_images"):
+        os.makedirs(output_dir, exist_ok=True)
+        self.generator.eval()
+        with torch.no_grad():
+            for i in range(num_images):
+                latent = torch.randn(1, self.latent_size, 1, 1, device=self.device)
+                fake_image = self.generator(latent)
+                if epoch is None: 
+                    save_image(fake_image, os.path.join(output_dir, f"image_{i+1}.png"))
+                else:
+                    save_image(fake_image, os.path.join(output_dir, f"epoch_{epoch}_image_{i+1}.png"))
+
+    def test_discriminator(self, test_dl):
+        self.discriminator.eval()
+        num_correct = 0
+        total_samples = 0
+        with torch.no_grad():
+            for real_images, _ in tqdm(test_dl, desc="Testing Discriminator"):
+                real_images = real_images.to(self.device)
+                preds = self.discriminator(real_images)
+                preds = (preds >= 0.5).float()  
+                num_correct += torch.sum(preds == 1).item()
+                total_samples += preds.numel()
+        accuracy = num_correct / total_samples
+        return accuracy
 
     def train_generator(self, optimizer_g, batch_size):
         self.discriminator.eval()
@@ -81,7 +108,6 @@ class GAN():
             log.write("Epoch, Real Score, Fake Score, Loss Generator, Loss discriminator\n")
 
         for epoch in range(epochs):
-            num_epoch = int(epoch) + 1
             for real_images, _ in tqdm(train_dl, desc=f"Training {epoch+1}/{epochs}"):
                 batch_size = real_images.shape[0]
 
@@ -89,30 +115,25 @@ class GAN():
                 loss_d, real_score, fake_score = self.train_discriminator(real_images, optimizer_d, batch_size)
 
                 loss_g = self.train_generator(optimizer_g, batch_size)
-                
+                    
             losses_g.append(loss_g)
             losses_d.append(loss_d)
             real_scores.append(real_score)
             fake_scores.append(fake_score)
-            
+                
             print("Epoch [{}/{}], loss_g: {:.4f}, loss_d: {:.4f}, real_score: {:.4f}, fake_score: {:.4f}".format(
                 epoch+1, epochs, loss_g, loss_d, real_score, fake_score))
-        
-        with open(log_file, "w") as log:
-            log.write(f"Epoch {epoch+1} : Real score {real_score} Fake score {fake_score} Loss generator {loss_g} Loss discriminator {loss_d}\n")
+            
+            with open(log_file, "w") as log:
+                log.write(f"Epoch {epoch+1} : Real score {real_score} Fake score {fake_score} Loss generator {loss_g} Loss discriminator {loss_d}\n")
 
-        if num_epoch % log_interval == 0:
-            print(f"Logging scores at epoch {epoch + 1}:")
-            print("Real Score:", real_scores)
-            print("Fake Score:", fake_scores)
-        
-        # Save model every log_interval epochs
-        if num_epoch % log_interval == 0:
-            torch.save({
-                'epoch': epoch,
-                'generator_state_dict': self.generator.state_dict(),
-                'discriminator_state_dict': self.discriminator.state_dict(),
-            }, f"gan_game_{epoch+1}.pth")
+            if (epoch+1) % log_interval == 0:
+                torch.save({
+                    'epoch': epoch,
+                    'generator_state_dict': self.generator.state_dict(),
+                    'discriminator_state_dict': self.discriminator.state_dict(),
+                }, f"gan_game_{epoch+1}.pth")
+                self.generate_images(epoch + 1, num_images=5)
         
         return losses_g, losses_d, real_scores, fake_scores
 
