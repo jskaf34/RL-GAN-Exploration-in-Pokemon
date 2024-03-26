@@ -7,7 +7,6 @@ from typing import Tuple, Optional
 
 from ray.rllib.algorithms.dqn.dqn_torch_policy import DQNTorchPolicy
 from ray.rllib.policy.sample_batch import SampleBatch
-from ray.rllib.utils.torch_utils import reduce_mean_ignore_inf
 from ray.rllib.utils.typing import TensorType, List, Dict
 from ray.rllib.utils.numpy import convert_to_numpy
 from ray.rllib.models.torch.torch_action_dist import TorchDistributionWrapper

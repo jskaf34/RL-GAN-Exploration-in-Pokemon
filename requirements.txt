@@ -1,8 +1,8 @@
+pyboy==1.6.14
 numpy 
 scipy
 torch --index-url https://download.pytorch.org/whl/cu121
 tqdm
-pyboy 
 gym 
 keyboard
 pillow

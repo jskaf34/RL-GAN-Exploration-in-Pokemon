@@ -4,11 +4,19 @@ import numpy as np
 import pandas as pd
 import mediapy as media
 import gymnasium as gym
+from datetime import datetime
 
-from pyboy import PyBoy, WindowEvent
+from pyboy import PyBoy
+try :
+    from pyboy import WindowEvent
+except Exception as e:
+    print(e)
+    print("Trying to import from pyboy.utils")
+    from pyboy.utils import WindowEvent
 from .memory_addresses import *
 from .memory import ExplorationMemory
 from gymnasium.spaces import Discrete, Box
+from time import sleep
 
 
 
@@ -302,7 +310,7 @@ class PokemonEnv(gym.Env):
         if self.render_reward:
             print(f"Pokédex: {pok_reward}, Badges: {badge_reward}, Death: {death_reward}, Levels: {level_reward}, exploration: {self.exp_reward}")
         
-        return (pok_reward + badge_reward + death_reward + level_reward + self.exp_reward) / self.rew_norm
+        return (pok_reward + badge_reward + death_reward + level_reward) / self.rew_norm
     
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
@@ -348,5 +356,19 @@ class PokemonEnv(gym.Env):
         truncated = self.nb_step >= self.max_step
         self.last_health = self.read_hp_fraction()
         terminated = self.last_health == 0 or truncated
-
+        if self.nb_step %1000 == 0  and self.nb_step != 0:
+            # get the date and time to create a unique file name
+            date_time = datetime.now().strftime("%Y%m%d%H%M%S")
+            #get the directory of the current file
+            dir_project = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            # save the data_info to a csv file
+            path = os.path.join(dir_project, "data_agents")
+            if not os.path.exists(path):
+                os.makedirs(path)
+            path_final = os.path.join(path, f"data_info_{date_time}_{self.nb_step}steps.csv")
+            self.data_info.to_csv(path_final)
+            #reset the data_info
+            self.data_info = pd.DataFrame(columns=["current_hp","levels", "badges", "pokedex_count", "m", "x", "y"])
+            #pause 2 secs
+            sleep(2)
         return observation, reward, terminated, truncated, info
