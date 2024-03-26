@@ -2,7 +2,7 @@
 # https://github.com/pret/pokered/blob/91dc3c9f9c8fd529bb6e8307b58b96efa0bec67e/constants/event_constants.asm
 
 PARTY_SIZE_ADDRESS = 0xD163
-X_POS_ADDRESS, Y_POS_ADDRESS = 0xD364, 0xD363
+X_POS_ADDRESS, Y_POS_ADDRESS = 0xD362, 0xD361
 MAP_N_ADDRESS = 0xD35E
 BADGE_COUNT_ADDRESS = 0xD356
 

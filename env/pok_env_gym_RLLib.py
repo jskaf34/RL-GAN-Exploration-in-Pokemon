@@ -151,9 +151,9 @@ class PokemonEnv(gym.Env):
         Returns:
         - int: Coordinates of the player
         """
-        return (self.bit_count(self.read_m(MAP_N_ADDRESS)), 
-            self.bit_count(self.read_m(X_POS_ADDRESS)), 
-            self.bit_count(self.read_m(Y_POS_ADDRESS))
+        return (self.read_m(MAP_N_ADDRESS), 
+            self.read_m(X_POS_ADDRESS), 
+            self.read_m(Y_POS_ADDRESS)
         )
 
     def get_map_location(self, map_idx):
