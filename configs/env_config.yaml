@@ -10,7 +10,7 @@ im_dim:
   - 128
   - 128
 sim_frame_dist: 5700
-render_view: false
+render_view: true
 action_freq: 24  # 370 fights animations
 video_path: ""
 save_video: false
