@@ -15,26 +15,26 @@ def game_coord_to_pixel_coord(
     
     global_offset = np.array([1056-16*12, 331]) #np.array([790, -29])
     map_offsets = {
-        0: np.array([0,0]), # pallet town
-        1: np.array([-10, 72]), # viridian
+        0: np.array([0,211]), # pallet town
+        1: np.array([-10, 138]), # viridian
         2: np.array([-10, 180]), # pewter
-        12: np.array([0, 36]), # route 1
-        13: np.array([0, 144]), # route 2
+        12: np.array([0, 175]), # route 1
+        13: np.array([0, 64]), # route 2
         14: np.array([30, 172]), # Route 3
         15: np.array([80, 190]), #Route 4
-        33: np.array([-50, 64]), # route 22
-        37: np.array([-9, 2]), # red house first
+        33: np.array([-50, 145]), # route 22
+        37: np.array([-9, 216]), # red house first
         38: np.array([-9, 25-32]), # red house second
-        39: np.array([9+12, 2]), # blues house
-        40: np.array([25-4, -6]), # oaks lab
-        41: np.array([30, 47]), # Pokémon Center (Viridian City)
-        42: np.array([30, 55]), # Poké Mart (Viridian City)
-        43: np.array([30, 72]), # School (Viridian City)
-        44: np.array([30, 64]), # House 1 (Viridian City)
+        39: np.array([9+12, 207]), # blues house
+        40: np.array([25-4, 217]), # oaks lab
+        41: np.array([30, 162]), # Pokémon Center (Viridian City)
+        42: np.array([30, 155]), # Poké Mart (Viridian City)
+        43: np.array([30, 137]), # School (Viridian City)
+        44: np.array([30, 147]), # House 1 (Viridian City)
         47: np.array([21,136]), # Gate (Viridian City/Pewter City) (Route 2)
         49: np.array([21,108]), # Gate (Route 2)
-        50: np.array([21,108]), # Gate (Route 2/Viridian Forest) (Route 2)
-        51: np.array([-35, 137]), # viridian forest
+        50: np.array([21,102]), # Gate (Route 2/Viridian Forest) (Route 2)
+        51: np.array([-35, 73]), # viridian forest
         52: np.array([-10, 189]), # Pewter Museum (floor 1)
         53: np.array([-10, 198]), # Pewter Museum (floor 2)
         54: np.array([-21, 169]), #Pokémon Gym (Pewter City)
@@ -85,11 +85,11 @@ def main(args):
     img_height = 4000
 
     plt.figure(figsize=(10, 10))  
-    plt.imshow(main_map, cmap='gray', extent=[0, img_width, 0, img_height])
+    plt.imshow(blend_overlay(start_bg, overlay), cmap='gray', extent=[0, img_width, 0, img_height])
 
     # Plot the density of points as a heatmap
     plt.hexbin(pixel_coords[:, 0], 
-        (img_height-pixel_coords[:, 1])-180, 
+        pixel_coords[:, 1], 
         gridsize=250, 
         cmap='plasma', 
         alpha=0.8, 
@@ -102,8 +102,8 @@ def main(args):
     plt.ylabel('Y')
     plt.title('Density Heatmap Overlay on Image')
 
-    plt.xlim(0, img_width)  # Ensure correct limits
-    plt.ylim(0, img_height)  # Ensure correct limits
+    plt.xlim(0, img_width)  
+    plt.ylim(0, img_height) 
     
     if args.output_name is not None:
         plt.savefig(args.output_name, dpi=300, bbox_inches='tight') 

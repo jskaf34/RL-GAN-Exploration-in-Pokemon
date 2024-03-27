@@ -315,19 +315,19 @@ class PokemonEnv(gym.Env):
         truncated = self.nb_step >= self.max_step
         self.last_health = self.read_hp_fraction()
         terminated = self.last_health == 0 or truncated
-        if self.nb_step %1000 == 0  and self.nb_step != 0:
-            # get the date and time to create a unique file name
-            date_time = datetime.now().strftime("%Y%m%d%H%M%S")
-            #get the directory of the current file
-            dir_project = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            # save the data_info to a csv file
-            path = os.path.join(dir_project, "data_agents")
-            if not os.path.exists(path):
-                os.makedirs(path)
-            path_final = os.path.join(path, f"data_info_{date_time}_{self.nb_step}steps.csv")
-            self.data_info.to_csv(path_final)
-            #reset the data_info
-            self.data_info = pd.DataFrame(columns=["current_hp","levels", "badges", "pokedex_count", "m", "x", "y"])
-            #pause 2 secs
-            sleep(2)
+        # if self.nb_step %1000 == 0  and self.nb_step != 0:
+        #     # get the date and time to create a unique file name
+        #     date_time = datetime.now().strftime("%Y%m%d%H%M%S")
+        #     #get the directory of the current file
+        #     dir_project = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        #     # save the data_info to a csv file
+        #     path = os.path.join(dir_project, "data_agents")
+        #     if not os.path.exists(path):
+        #         os.makedirs(path)
+        #     path_final = os.path.join(path, f"data_info_{date_time}_{self.nb_step}steps.csv")
+        #     self.data_info.to_csv(path_final)
+        #     #reset the data_info
+        #     self.data_info = pd.DataFrame(columns=["current_hp","levels", "badges", "pokedex_count", "m", "x", "y"])
+        #     #pause 2 secs
+        #     sleep(2)
         return observation, reward, terminated, truncated, info
