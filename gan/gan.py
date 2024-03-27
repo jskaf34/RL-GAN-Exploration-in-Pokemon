@@ -9,10 +9,11 @@ import torchvision.transforms as tt
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+from torchvision.utils import save_image
 
 class GAN(): 
     def __init__(self, latent_size, image_size):
-        self.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         self.latent_size = latent_size
         self.image_size = image_size
@@ -21,6 +22,32 @@ class GAN():
         self.discriminator.to(self.device)
         self.generator = self.create_generator(latent_size)
         self.generator.to(self.device)
+
+    def generate_images(self, epoch=None, num_images=5, output_dir="generated_images"):
+        os.makedirs(output_dir, exist_ok=True)
+        self.generator.eval()
+        with torch.no_grad():
+            for i in range(num_images):
+                latent = torch.randn(1, self.latent_size, 1, 1, device=self.device)
+                fake_image = self.generator(latent)
+                if epoch is None: 
+                    save_image(fake_image, os.path.join(output_dir, f"image_{i+1}.png"))
+                else:
+                    save_image(fake_image, os.path.join(output_dir, f"epoch_{epoch}_image_{i+1}.png"))
+
+    def test_discriminator(self, test_dl):
+        self.discriminator.eval()
+        num_correct = 0
+        total_samples = 0
+        with torch.no_grad():
+            for real_images, _ in tqdm(test_dl, desc="Testing Discriminator"):
+                real_images = real_images.to(self.device)
+                preds = self.discriminator(real_images)
+                preds = (preds >= 0.5).float()  
+                num_correct += torch.sum(preds == 1).item()
+                total_samples += preds.numel()
+        accuracy = num_correct / total_samples
+        return accuracy
 
     def train_generator(self, optimizer_g, batch_size):
         self.discriminator.eval()
@@ -81,38 +108,33 @@ class GAN():
             log.write("Epoch, Real Score, Fake Score, Loss Generator, Loss discriminator\n")
 
         for epoch in range(epochs):
-            num_epoch = int(epoch) + 1
             for real_images, _ in tqdm(train_dl, desc=f"Training {epoch+1}/{epochs}"):
+                test = real_images[0].to("cpu").numpy()
                 batch_size = real_images.shape[0]
 
                 real_images = real_images.to(self.device)
                 loss_d, real_score, fake_score = self.train_discriminator(real_images, optimizer_d, batch_size)
 
                 loss_g = self.train_generator(optimizer_g, batch_size)
-                
+                    
             losses_g.append(loss_g)
             losses_d.append(loss_d)
             real_scores.append(real_score)
             fake_scores.append(fake_score)
-            
+                
             print("Epoch [{}/{}], loss_g: {:.4f}, loss_d: {:.4f}, real_score: {:.4f}, fake_score: {:.4f}".format(
                 epoch+1, epochs, loss_g, loss_d, real_score, fake_score))
-        
-        with open(log_file, "w") as log:
-            log.write(f"Epoch {epoch+1} : Real score {real_score} Fake score {fake_score} Loss generator {loss_g} Loss discriminator {loss_d}\n")
+            
+            with open(log_file, "w") as log:
+                log.write(f"Epoch {epoch+1} : Real score {real_score} Fake score {fake_score} Loss generator {loss_g} Loss discriminator {loss_d}\n")
 
-        if num_epoch % log_interval == 0:
-            print(f"Logging scores at epoch {epoch + 1}:")
-            print("Real Score:", real_scores)
-            print("Fake Score:", fake_scores)
-        
-        # Save model every log_interval epochs
-        if num_epoch % log_interval == 0:
-            torch.save({
-                'epoch': epoch,
-                'generator_state_dict': self.generator.state_dict(),
-                'discriminator_state_dict': self.discriminator.state_dict(),
-            }, f"gan_game_{epoch+1}.pth")
+            if (epoch+1) % log_interval == 0:
+                torch.save({
+                    'epoch': epoch,
+                    'generator_state_dict': self.generator.state_dict(),
+                    'discriminator_state_dict': self.discriminator.state_dict(),
+                }, f"gan_game_{epoch+1}.pth")
+                self.generate_images(epoch + 1, num_images=5)
         
         return losses_g, losses_d, real_scores, fake_scores
 
@@ -141,35 +163,45 @@ class GAN():
             nn.ReLU(True),
             # out: 64 x 32 x 32
 
+            # nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1, bias=False),
+            # nn.BatchNorm2d(32),
+            # nn.ReLU(True),
+            # # out: 32 x 64 x 64
+
             nn.ConvTranspose2d(64, 3, kernel_size=4, stride=2, padding=1, bias=False),
             nn.Tanh()
-            # out: 3 x 64 x 64
+            # out: 1 x 128 x 128
         )
     
     @staticmethod
     def create_discriminator(): 
         return nn.Sequential(
-            # in: 3 x 64 x 64
+            # in: 1 x 128 x 128
 
             nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(0.2, inplace=True),
-            # out: 64 x 32 x 32
+            # out: 64 x 64 x 64
 
             nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
-            # out: 128 x 16 x 16
+            # out: 128 x 32 x 32
 
             nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2, inplace=True),
-            # out: 256 x 8 x 8
+            # out: 256 x 16 x 16
 
             nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2, inplace=True),
-            # out: 512 x 4 x 4
+            # out: 512 x 8 x 8
+
+            # nn.Conv2d(512, 512, kernel_size=4, stride=2, padding=1, bias=False),
+            # nn.BatchNorm2d(512),
+            # nn.LeakyReLU(0.2, inplace=True),
+            # # out: 512 x 4 x 4
 
             nn.Conv2d(512, 1, kernel_size=4, stride=1, padding=0, bias=False),
             # out: 1 x 1 x 1
@@ -191,14 +223,17 @@ if __name__ == "__main__":
     IMAGE_SIZE = int(config["gan_params"]["image_size"])
     
     stats = (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)
+    # stats=(0.5), (0.5)
 
     train_ds = ImageFolder(DATA_DIR, transform=tt.Compose([tt.Resize(IMAGE_SIZE),
                                                         tt.CenterCrop(IMAGE_SIZE),
+                                                        tt.Grayscale(num_output_channels=3),
                                                         tt.ToTensor(),
                                                         tt.Normalize(*stats)]))
     train_dl = DataLoader(train_ds, BATCH_SIZE, shuffle=True, num_workers=3, pin_memory=True)
 
     gan = GAN(LATENT_SIZE, IMAGE_SIZE)
+    print(f"Training on device : {gan.device}")
 
     history = gan.train_gan(
         epochs=EPOCHS, 

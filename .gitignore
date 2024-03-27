@@ -9,3 +9,8 @@ data_agents_DQN/
 data_agents/
 weights/
 data_agents_DQN_GAN/
+gan/screenshots
+gan/old
+gan/generated/
+gan/generated2
+gan/weights
