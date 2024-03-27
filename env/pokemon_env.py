@@ -172,7 +172,7 @@ class PokemonEnv(gym.Env):
         if self.render_reward:
             print(f"Pokédex: {pok_reward}, Badges: {badge_reward}, Death: {death_reward}, Experiences: {experience_reward}, exploration: {self.exp_reward}")
         
-        return (pok_reward + badge_reward + death_reward + experience_reward + self.exp_reward) / self.rew_norm
+        return (pok_reward + badge_reward + death_reward + self.exp_reward) / self.rew_norm
 
     def reset(self):
         with open(self.init_state, "rb") as f:
@@ -204,7 +204,7 @@ class PokemonEnv(gym.Env):
                 self.video_writer.add_image(np.array(self.pyboy.screen_image()))
 
         obs = self.get_current_state()
-        self.update_exp_memory(obs[1])
+        # self.update_exp_memory(obs[1])
 
         reward = self.get_reward(obs[0])
 

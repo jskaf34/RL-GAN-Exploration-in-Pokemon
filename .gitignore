@@ -4,3 +4,8 @@ docs/
 test.py
 checkpoints/
 gan/cats/
+gan/screenshots
+gan/old
+gan/generated/
+gan/generated2
+gan/weights
