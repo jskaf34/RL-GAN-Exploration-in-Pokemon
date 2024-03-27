@@ -13,7 +13,7 @@ def env_creator(arg):
 register_env("PokemonEnv", env_creator)
 
 ray.init()
-input_size = (120,120)
+input_size = (128,128)
 
 for i in range(10):
     replay_config = {

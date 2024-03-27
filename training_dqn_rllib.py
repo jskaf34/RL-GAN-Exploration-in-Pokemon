@@ -4,17 +4,22 @@ from ray.rllib.algorithms.dqn.dqn import DQNConfig, DQN
 from ray.tune.logger import pretty_print
 import ray
 from ray.tune.registry import register_env
+from time import time
 
 def env_creator(arg):
     print(arg)
-    return PokemonEnv(render_mode="rgb_array")
+    return PokemonEnv(render_mode="human")
 
-register_env("PokemonEnv", env_creator)
 
-ray.init()
+
 input_size = (120,120)
+#Start time
+start = time()
 
-for i in range(10):
+for i in range(1):
+    ray.init()
+    register_env("PokemonEnv", env_creator)
+
     replay_config = {
             "type": "MultiAgentPrioritizedReplayBuffer",
             "capacity": 60000,
@@ -32,11 +37,11 @@ for i in range(10):
                             dueling=False,
                             num_steps_sampled_before_learning_starts=100)
                 .resources(num_gpus=0)
-                .rollouts(num_rollout_workers=1)
+                .rollouts(num_rollout_workers=5)
                 .environment(env= "PokemonEnv"))
     algo = DQN(config=config)
 
-    for _ in range(30):
+    for _ in range(1):
         print(pretty_print(algo.train())) 
     
     print("Training done")
@@ -44,6 +49,12 @@ for i in range(10):
     # checkpoint = algo.save()
     # print(checkpoint)
     # print("Model saved")
-ray.shutdown()
+    del algo
+    ray.shutdown()
+
+#End time
+end = time()
+
+print("Time taken: ", end-start)
 
 

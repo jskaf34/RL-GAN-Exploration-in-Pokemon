@@ -3,6 +3,9 @@ import numpy as np
 import tree  # pip install dm_tree
 
 from typing import Union, Optional
+import torch.nn as nn
+import torch
+
 
 from ray.rllib.models.torch.torch_action_dist import TorchMultiActionDistribution
 from ray.rllib.models.action_dist import ActionDistribution
@@ -12,6 +15,7 @@ from ray.rllib.utils.framework import try_import_tf, try_import_torch, get_varia
 from ray.rllib.utils.torch_utils import FLOAT_MIN
 from ray.rllib.utils.numpy import convert_to_numpy
 from typing import Any
+import os 
 
 tf1, tf, tfv = try_import_tf()
 torch, _ = try_import_torch()
@@ -31,13 +35,46 @@ class RandomModel(torch.nn.Module):
         x = torch.sigmoid(x)
         x = (x > 0.5)
         return x
+    
+
+
 
 def load_gan(file_path_for_gan_weights: str, input_size: int):
     #Create a random torch model for testing
-    model = RandomModel(input_size)
+    # model = RandomModel(input_size)
     # model.load_state_dict(torch.load(file_path_for_gan_weights))
-    model.eval()
-    return model
+    discriminator = nn.Sequential(
+
+    nn.Conv2d(1, 64, kernel_size=4, stride=2, padding=1, bias=False),
+    nn.BatchNorm2d(64),
+    nn.LeakyReLU(0.2, inplace=True),
+
+    nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
+    nn.BatchNorm2d(128),
+    nn.LeakyReLU(0.2, inplace=True),
+
+    nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),
+    nn.BatchNorm2d(256),
+    nn.LeakyReLU(0.2, inplace=True),
+
+    nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1, bias=False),
+    nn.BatchNorm2d(512),
+    nn.LeakyReLU(0.2, inplace=True),
+
+    nn.Conv2d(512, 512, kernel_size=4, stride=2, padding=1, bias=False),
+    nn.BatchNorm2d(512),
+    nn.LeakyReLU(0.2, inplace=True),
+
+    nn.Conv2d(512, 1, kernel_size=4, stride=1, padding=0, bias=False),
+
+    nn.Flatten(),
+    nn.Sigmoid())
+    path = os.path.join(r'/Users/jskaf/Documents/Cours ECM 3A/Projet 3A/PROJET3A/weights/gan_game_232.pth')
+    #check if the path is correct
+    assert os.path.exists(path)
+    discriminator.load_state_dict(torch.load(path, map_location=torch.device('cpu'))['discriminator_state_dict'])
+    discriminator.train()
+    return discriminator
 
 
 
@@ -111,7 +148,15 @@ class GANExploration(Exploration):
         observations: TensorType,
         **kwargs):
         """Implement the action_to_explore : we give to the GAN the batch of observations, and the GAN will tell us which actions to explore"""
-        output = self.GAN(observations)
+        #convert observation in float32
+        
+        observations = observations.clone().detach().float()
+
+
+        output = self.GAN(observations.unsqueeze(1))
+
+        #thresholding the output
+        output = (output > 0.5)
         #We reshape to have a tensor of size (1, batch_size)
         output = output.view(1, -1).squeeze(0)
         self.actions_to_explore = output

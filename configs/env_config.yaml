@@ -7,8 +7,8 @@ emulation_speed: 0
 start_level: 8
 render_reward: true
 im_dim:
-  - 120
-  - 120
+  - 128
+  - 128
 sim_frame_dist: 5700
 render_view: false
 action_freq: 24  # 370 fights animations

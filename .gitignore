@@ -5,3 +5,7 @@ test.py
 checkpoints/
 gan/cats/
 enter/
+data_agents_DQN/
+data_agents/
+weights/
+data_agents_DQN_GAN/
