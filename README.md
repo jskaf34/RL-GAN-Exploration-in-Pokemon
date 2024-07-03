@@ -1,23 +1,15 @@
-# PROJET3A
+Some algorithms developed within the framework of deep reinforcement learning, aimed at training an agent to play a video game, can sometimes be less effective. For example, in some more complex games that require the agent to explore different possibilities more thoroughly, such as Pokémon or MONTEZUMA’S REVENGE, traditional methods may struggle to maintain a high level of exploration in very long games or to "choose" when to explore when encountering new "zones" or situations. For this type of game, it is often necessary to add a stronger incentive for exploration so that the agent learns to navigate its environment correctly. In this project, we focused on adding a GAN, particularly the discriminator part of a GAN trained on the images seen during the agent's training. The advantage of the GAN here is its unsupervised nature, which allows us to train the discriminator simply by providing images of the game encountered by the agent without the need for labeling. We will thus study the impact that adding such a discriminator can have on the behavior of a DQN agent.
 
-## Environnement Pokemon
+Using the RLlib and Gymnasium framework, we propose a simple method to enhance exploration by replacing the classic epsilon-greedy DQN exploration paradigm with the following mechanism:
+* If the GAN discriminator recognizes an image already seen in past training, the agent chooses an action greedily.
+* Otherwise, the agent takes an action randomly.
 
-### Choix de la méthode pour KNN
-J'ai choisi, la méthode implémentée plutôt que celle de l'env original parce qu'on ne peut pas modifier la mémoire avec la méthode originelle. En effet, dans le code d'origine, lorsqu'on a rempli la mémoire, on est bloqué donc dans leur code ce qui est fait c'est une réinitialisation. Je n'aimais pas trop ça du coup j'ai préféré coder le truc à la main, ou cette fois lorsqu'on est plein on remplace les plus vieux, etc... J'ai comparé les méthodes (cf resultats en dessous), la notre est évidemment bien plus lente pour le knn mais bcp plus rapide pour l'ajout d'image. En fait celle de base construit un graphe knn lors de l'ajout.
+** Validation metric
+To observe and validate a good exploration behavior of the agent, we choose to plot the density of movement of the agent in Pokemon world through the plot of a heatmap.
 
-#### Résultats memory speed tests : 
-100%|██████████████████████████████████████████████████████████████████████████| 20000/20000 [00:19<00:00, 1017.66it/s]  
-Custom filling time : 19.674415826797485  
-100%|████████████████████████████████████████████████████████████████████████████| 20000/20000 [45:23<00:00,  7.34it/s]  
-Opt filling time : 2723.476750612259  
-Custom search : 31.21134901046753  
-Opt search : 0.3584418296813965  
-[[[152.10453916]]] [[11381.666]] [[0]] [[4070]]  
+If the whole pipeline works, many points remain to be developed to see interesting results:
+* Increase the number of training iterations.
+* Improve GAN convergence and discriminator efficiency.
+* Change the exploration paradigm by including an internal exploration reward (similar to the Agent57 algorithm).
+* Tune hyperparameters using Ray parallelization.
 
-### Choix des actions
-J'ai décidé d'ajouter l'action "0: ne rien faire", parce que lors des cinématiques de combat ou de discussion, avec le tick de pyboy il faut attendre bcp de frames avant d'avoir vraiment une action à faire, je me suis dit que c'était mieux si l'agent pouvait apprendre à ne rien faire dans ces moments là (comme nous on ferait).
-
-UPDATE:
-En fait plutôt que de faire ça on peut aussi attendre X ticks avant de renvoyer un nouvel état. 24 est dans le modèle initial. J'ai testé avec le script test_tick.py et j'ai l'impression que pour les combats c'est 48 ticks. Donc j'ai mis 48 dans le code.
-
-## DQN
