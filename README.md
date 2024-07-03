@@ -4,8 +4,10 @@ Using the RLlib and Gymnasium framework, we propose a simple method to enhance e
 * If the GAN discriminator recognizes an image already seen in past training, the agent chooses an action greedily.
 * Otherwise, the agent takes an action randomly.
 
-** Validation metric
+**Validation metric
 To observe and validate a good exploration behavior of the agent, we choose to plot the density of movement of the agent in Pokemon world through the plot of a heatmap.
+
+![Picture example Heatmap]()
 
 If the whole pipeline works, many points remain to be developed to see interesting results:
 * Increase the number of training iterations.
